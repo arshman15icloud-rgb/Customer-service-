@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Announcement } from '../../types.js';
-import { api } from '../../lib/api.js';
+import { Announcement } from '../../types';
+import { api } from '../../lib/api';
 import { Megaphone, Plus, Edit2, Trash2, X, Check, Flame, Sparkles } from 'lucide-react';
 
 export const AdminAnnouncements: React.FC = () => {

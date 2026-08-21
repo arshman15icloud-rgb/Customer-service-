@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AnalyticsData, SyncStatus, AdminNotification } from '../../types.js';
-import { api } from '../../lib/api.js';
+import { AnalyticsData, SyncStatus, AdminNotification } from '../../types';
+import { api } from '../../lib/api';
 import {
   MessageSquare,
   Sparkles,

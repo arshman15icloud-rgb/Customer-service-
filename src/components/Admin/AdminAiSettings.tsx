@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AISettings } from '../../types.js';
-import { api } from '../../lib/api.js';
+import { AISettings } from '../../types';
+import { api } from '../../lib/api';
 import { Sparkles, Save, Send, RefreshCw, CheckCircle, Bot, Sliders } from 'lucide-react';
 
 export const AdminAiSettings: React.FC = () => {

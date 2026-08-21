@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Lock, ShieldCheck, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
-import { api } from '../../lib/api.js';
+import { api } from '../../lib/api';
 
 interface AdminAuthModalProps {
   isOpen: boolean;

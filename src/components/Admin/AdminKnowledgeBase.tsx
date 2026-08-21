@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { KnowledgeDoc } from '../../types.js';
-import { api } from '../../lib/api.js';
+import { KnowledgeDoc } from '../../types';
+import { api } from '../../lib/api';
 import { BookOpen, Plus, Edit2, FileText, Check, X, Sparkles } from 'lucide-react';
 
 export const AdminKnowledgeBase: React.FC = () => {

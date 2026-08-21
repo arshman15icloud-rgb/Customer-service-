@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Conversation, Message, Customer, Product } from '../../types.js';
-import { api } from '../../lib/api.js';
+import { Conversation, Message, Customer, Product } from '../../types';
+import { api } from '../../lib/api';
 import {
   MessageSquare,
   Search,

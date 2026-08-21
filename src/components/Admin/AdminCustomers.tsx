@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Customer } from '../../types.js';
-import { api } from '../../lib/api.js';
+import { Customer } from '../../types';
+import { api } from '../../lib/api';
 import { Users, Search, User, Mail, MessageSquare, Tag, Check, Edit2 } from 'lucide-react';
 
 interface AdminCustomersProps {

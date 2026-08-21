@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Product } from '../../types.js';
-import { api } from '../../lib/api.js';
+import { Product } from '../../types';
+import { api } from '../../lib/api';
 import {
   ShoppingBag,
   Plus,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FAQ } from '../../types.js';
-import { api } from '../../lib/api.js';
+import { FAQ } from '../../types';
+import { api } from '../../lib/api';
 import { HelpCircle, Plus, Edit2, Trash2, Check, X, Search, Eye, EyeOff } from 'lucide-react';
 
 export const AdminFaqs: React.FC = () => {

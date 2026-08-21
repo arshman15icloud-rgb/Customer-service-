@@ -4,15 +4,15 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Product, WebsiteSettings, AISettings } from './types.js';
-import { api } from './lib/api.js';
-import { getOrCreateCustomerId, getStoredCustomerProfile } from './lib/pwa.js';
+import { Product, WebsiteSettings, AISettings } from './types';
+import { api } from './lib/api';
+import { getOrCreateCustomerId, getStoredCustomerProfile } from './lib/pwa';
 
-import { VertexChatApp } from './components/VertexChatApp.js';
-import { ProductDetailModal } from './components/ProductDetailModal.js';
-import { CustomerProfileModal } from './components/CustomerProfileModal.js';
-import { AdminAuthModal } from './components/Admin/AdminAuthModal.js';
-import { AdminLayout } from './components/Admin/AdminLayout.js';
+import { VertexChatApp } from './components/VertexChatApp';
+import { ProductDetailModal } from './components/ProductDetailModal';
+import { CustomerProfileModal } from './components/CustomerProfileModal';
+import { AdminAuthModal } from './components/Admin/AdminAuthModal';
+import { AdminLayout } from './components/Admin/AdminLayout';
 
 export default function App() {
   const [isAdminView, setIsAdminView] = useState(false);

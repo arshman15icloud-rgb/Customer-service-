@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SyncStatus } from '../../types.js';
-import { api } from '../../lib/api.js';
+import { SyncStatus } from '../../types';
+import { api } from '../../lib/api';
 import {
   Globe,
   RefreshCw,

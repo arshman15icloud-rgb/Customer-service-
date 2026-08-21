@@ -16,18 +16,18 @@ import {
   LogOut,
   Bell
 } from 'lucide-react';
-import { AdminDashboard } from './AdminDashboard.js';
-import { AdminInbox } from './AdminInbox.js';
-import { AdminProducts } from './AdminProducts.js';
-import { AdminProductSync } from './AdminProductSync.js';
-import { AdminFaqs } from './AdminFaqs.js';
-import { AdminKnowledgeBase } from './AdminKnowledgeBase.js';
-import { AdminAnnouncements } from './AdminAnnouncements.js';
-import { AdminBroadcasts } from './AdminBroadcasts.js';
-import { AdminCustomers } from './AdminCustomers.js';
-import { AdminAiSettings } from './AdminAiSettings.js';
-import { AdminWebsiteSettings } from './AdminWebsiteSettings.js';
-import { AdminSecurity } from './AdminSecurity.js';
+import { AdminDashboard } from './AdminDashboard';
+import { AdminInbox } from './AdminInbox';
+import { AdminProducts } from './AdminProducts';
+import { AdminProductSync } from './AdminProductSync';
+import { AdminFaqs } from './AdminFaqs';
+import { AdminKnowledgeBase } from './AdminKnowledgeBase';
+import { AdminAnnouncements } from './AdminAnnouncements';
+import { AdminBroadcasts } from './AdminBroadcasts';
+import { AdminCustomers } from './AdminCustomers';
+import { AdminAiSettings } from './AdminAiSettings';
+import { AdminWebsiteSettings } from './AdminWebsiteSettings';
+import { AdminSecurity } from './AdminSecurity';
 
 interface AdminLayoutProps {
   onBackToStore: () => void;

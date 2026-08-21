@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BroadcastNotification, Customer } from '../../types.js';
-import { api } from '../../lib/api.js';
+import { BroadcastNotification, Customer } from '../../types';
+import { api } from '../../lib/api';
 import { Send, Users, Bell, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
 
 export const AdminBroadcasts: React.FC = () => {
