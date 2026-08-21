@@ -14,6 +14,25 @@ import {
   AnalyticsData,
 } from '../types.js';
 
+async function handleResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    const text = await res.text();
+    let errorMessage = text;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed.error) {
+        errorMessage = parsed.error + (parsed.details ? `: ${parsed.details}` : '');
+      }
+    } catch {
+      if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+        errorMessage = `API route returned ${res.status} ${res.statusText}. Please verify backend configuration.`;
+      }
+    }
+    throw new Error(errorMessage || `Request failed with status ${res.status}`);
+  }
+  return res.json();
+}
+
 export const api = {
   // Chat
   async sendMessage(params: {
@@ -35,22 +54,19 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
   },
 
   // Conversations
   async getConversations(status = 'all', search = ''): Promise<Conversation[]> {
     const url = `/api/conversations?status=${encodeURIComponent(status)}&search=${encodeURIComponent(search)}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
   },
 
   async getConversation(id: string): Promise<{ conversation: Conversation; messages: Message[]; customer?: Customer }> {
     const res = await fetch(`/api/conversations/${id}`);
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
   },
 
   async takeOverConversation(id: string, agentName: string): Promise<{ success: boolean; conversation: Conversation }> {
@@ -59,8 +75,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ agentName }),
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
   },
 
   async returnToAi(id: string): Promise<{ success: boolean; conversation: Conversation }> {
@@ -68,8 +83,7 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
   },
 
   async replyToConversation(id: string, message: string, productIds?: string[], senderName?: string): Promise<{ success: boolean; message: Message; conversation: Conversation }> {
@@ -78,8 +92,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, productIds, senderName }),
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
   },
 
   async updateConversation(id: string, updates: Partial<Conversation>): Promise<Conversation> {
@@ -88,8 +101,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
   },
 
   // Products
@@ -99,14 +111,12 @@ export const api = {
     if (search) params.append('search', search);
     if (includeDisabled) params.append('includeDisabled', 'true');
     const res = await fetch(`/api/products?${params.toString()}`);
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
   },
 
   async getProduct(id: string): Promise<Product> {
     const res = await fetch(`/api/products/${id}`);
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
   },
 
   async saveProduct(product: Partial<Product>): Promise<Product> {
@@ -116,67 +126,69 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(product),
       });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
+      return handleResponse(res);
     } else {
       const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(product),
       });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
+      return handleResponse(res);
     }
   },
 
-  async deleteProduct(id: string): Promise<boolean> {
-    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
-    const data = await res.json();
-    return data.success;
+  async deleteProduct(id: string): Promise<{ success: boolean }> {
+    const res = await fetch(`/api/products/${id}`, {
+      method: 'DELETE',
+    });
+    return handleResponse(res);
   },
 
   // Sync Engine
-  async testSyncConnection(url: string): Promise<{ success: boolean; latencyMs: number; message: string; details?: any }> {
+  async testSyncConnection(url: string): Promise<{ success: boolean; message: string; previewCount?: number; sampleTitles?: string[] }> {
     const res = await fetch('/api/sync/test', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url }),
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
   },
 
-  async runProductSync(url?: string): Promise<any> {
+  async runSyncNow(url?: string): Promise<SyncStatus> {
     const res = await fetch('/api/sync/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url }),
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
+  },
+
+  async runProductSync(url?: string): Promise<SyncStatus> {
+    return this.runSyncNow(url);
   },
 
   async getSyncStatus(): Promise<SyncStatus> {
     const res = await fetch('/api/sync/status');
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
   },
 
-  async updateSyncStatus(status: Partial<SyncStatus>): Promise<SyncStatus> {
+  async updateSyncSettings(settings: Partial<SyncStatus>): Promise<SyncStatus> {
     const res = await fetch('/api/sync/status', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(status),
+      body: JSON.stringify(settings),
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
+  },
+
+  async updateSyncStatus(settings: Partial<SyncStatus>): Promise<SyncStatus> {
+    return this.updateSyncSettings(settings);
   },
 
   // FAQs
   async getFaqs(): Promise<FAQ[]> {
     const res = await fetch('/api/faqs');
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return handleResponse(res);
   },
 
   async saveFaq(faq: Partial<FAQ>): Promise<FAQ> {
@@ -186,51 +198,52 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(faq),
       });
-      return res.json();
+      return handleResponse(res);
     } else {
       const res = await fetch('/api/faqs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(faq),
       });
-      return res.json();
+      return handleResponse(res);
     }
   },
 
-  async deleteFaq(id: string): Promise<boolean> {
-    const res = await fetch(`/api/faqs/${id}`, { method: 'DELETE' });
-    const data = await res.json();
-    return data.success;
+  async deleteFaq(id: string): Promise<{ success: boolean }> {
+    const res = await fetch(`/api/faqs/${id}`, {
+      method: 'DELETE',
+    });
+    return handleResponse(res);
   },
 
   // Knowledge Base
   async getKnowledgeDocs(): Promise<KnowledgeDoc[]> {
     const res = await fetch('/api/knowledge');
-    return res.json();
+    return handleResponse(res);
   },
 
   async saveKnowledgeDoc(doc: Partial<KnowledgeDoc>): Promise<KnowledgeDoc> {
-    if (doc.id) {
+    if (doc.id && !doc.id.startsWith('new-')) {
       const res = await fetch(`/api/knowledge/${doc.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(doc),
       });
-      return res.json();
+      return handleResponse(res);
     } else {
       const res = await fetch('/api/knowledge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(doc),
       });
-      return res.json();
+      return handleResponse(res);
     }
   },
 
   // Announcements
   async getAnnouncements(activeOnly = false): Promise<Announcement[]> {
     const res = await fetch(`/api/announcements?activeOnly=${activeOnly}`);
-    return res.json();
+    return handleResponse(res);
   },
 
   async saveAnnouncement(ann: Partial<Announcement>): Promise<Announcement> {
@@ -240,48 +253,54 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ann),
       });
-      return res.json();
+      return handleResponse(res);
     } else {
       const res = await fetch('/api/announcements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ann),
       });
-      return res.json();
+      return handleResponse(res);
     }
   },
 
-  async deleteAnnouncement(id: string): Promise<boolean> {
-    const res = await fetch(`/api/announcements/${id}`, { method: 'DELETE' });
-    const data = await res.json();
-    return data.success;
+  async deleteAnnouncement(id: string): Promise<{ success: boolean }> {
+    const res = await fetch(`/api/announcements/${id}`, {
+      method: 'DELETE',
+    });
+    return handleResponse(res);
   },
 
   // Broadcasts
   async getBroadcasts(): Promise<BroadcastNotification[]> {
     const res = await fetch('/api/broadcasts');
-    return res.json();
+    return handleResponse(res);
   },
 
-  async sendBroadcast(payload: {
+  async sendBroadcast(params: {
     title: string;
     message: string;
-    targetType: 'all' | 'selected_customers' | 'segment';
+    targetType: 'all' | 'specific_customers' | 'active_today' | 'unresolved';
     recipientIds?: string[];
     actionUrl?: string;
   }): Promise<{ success: boolean; broadcast: BroadcastNotification }> {
     const res = await fetch('/api/broadcasts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(params),
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   // Customers
   async getCustomers(): Promise<Customer[]> {
     const res = await fetch('/api/customers');
-    return res.json();
+    return handleResponse(res);
+  },
+
+  async getCustomer(id: string): Promise<Customer> {
+    const res = await fetch(`/api/customers/${id}`);
+    return handleResponse(res);
   },
 
   async updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer> {
@@ -290,13 +309,13 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   // Settings
   async getWebsiteSettings(): Promise<WebsiteSettings> {
     const res = await fetch('/api/settings/website');
-    return res.json();
+    return handleResponse(res);
   },
 
   async updateWebsiteSettings(settings: Partial<WebsiteSettings>): Promise<WebsiteSettings> {
@@ -305,12 +324,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings),
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   async getAiSettings(): Promise<AISettings> {
     const res = await fetch('/api/settings/ai');
-    return res.json();
+    return handleResponse(res);
   },
 
   async updateAiSettings(settings: Partial<AISettings>): Promise<AISettings> {
@@ -319,21 +338,22 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings),
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   // Admin Notifications
   async getAdminNotifications(): Promise<AdminNotification[]> {
     const res = await fetch('/api/admin/notifications');
-    return res.json();
+    return handleResponse(res);
   },
 
   async markAdminNotificationRead(id?: string): Promise<void> {
-    await fetch('/api/admin/notifications/mark-read', {
+    const res = await fetch('/api/admin/notifications/mark-read', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     });
+    return handleResponse(res);
   },
 
   // Admin Auth
@@ -343,7 +363,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   async changeAdminPassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message?: string; error?: string }> {
@@ -352,13 +372,13 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ currentPassword, newPassword }),
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   // Analytics
   async getAnalytics(): Promise<AnalyticsData> {
     const res = await fetch('/api/analytics');
-    return res.json();
+    return handleResponse(res);
   },
 
   // Push Subscription
@@ -368,6 +388,6 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ customerId, subscription }),
     });
-    return res.json();
+    return handleResponse(res);
   },
 };

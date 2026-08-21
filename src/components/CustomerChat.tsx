@@ -251,13 +251,26 @@ export const CustomerChat: React.FC<CustomerChatProps> = ({
         conversationId: conversation?.id,
       });
 
-      setConversation(response.conversation);
+      if (response && response.conversation) {
+        setConversation(response.conversation);
+      }
 
-      const updatedMessages = await api.getConversation(response.conversation.id);
-      setMessages(updatedMessages.messages);
+      setMessages(prev => {
+        const withoutTemp = prev.filter(m => m.id !== tempCustomerMsg.id);
+        const newMessages = [...withoutTemp];
+        if (response.customerMessage) {
+          newMessages.push(response.customerMessage);
+        } else {
+          newMessages.push({ ...tempCustomerMsg, status: 'sent' });
+        }
+        if (response.aiMessage) {
+          newMessages.push(response.aiMessage);
+        }
+        return newMessages;
+      });
     } catch (err: any) {
       console.error('Error sending message:', err);
-      setErrorText('We’re having trouble connecting to AI care right now. Your message is saved.');
+      setErrorText(err?.message || 'We encountered an issue processing your request. Please try again or reach out on WhatsApp.');
       setMessages(prev =>
         prev.map(m => (m.id === tempCustomerMsg.id ? { ...m, status: 'sent' } : m))
       );

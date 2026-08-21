@@ -64,7 +64,7 @@ export const AdminProductSync: React.FC = () => {
     setSyncMessage(null);
     try {
       const res = await api.runProductSync(websiteUrl);
-      setSyncMessage(res.message);
+      setSyncMessage(res.message || `Sync completed successfully (${res.productsImported || 0} products updated).`);
       await loadStatus();
     } catch (err: any) {
       setSyncMessage(`Sync failed: ${err.message}`);

@@ -64,13 +64,22 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 📦 Production Build & Deployment
 
-### Build Command
+### Vercel Deployment (1-Click Ready)
+1. Push your repository to GitHub.
+2. In [Vercel](https://vercel.com), click **Add New Project** and import your repository.
+3. In **Environment Variables**, add:
+   - `GEMINI_API_KEY`: Your Gemini API Key from Google AI Studio.
+4. Click **Deploy**. Vercel will automatically use `vercel.json` and `/api/index.ts` to power both the React frontend and the serverless Express AI backend.
+
+### Docker & Container Deployment
 ```bash
-npm run build
+docker build -t vertex-lab-ai .
+docker run -p 3000:3000 -e GEMINI_API_KEY=your_key vertex-lab-ai
 ```
 
-### Start Production Server
+### Traditional Node.js Server
 ```bash
+npm run build
 npm run start
 ```
 

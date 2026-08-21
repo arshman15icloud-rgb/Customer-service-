@@ -162,6 +162,7 @@ export interface SyncStatus {
   productsFound?: number;
   productsImported?: number;
   productsFailed?: number;
+  message?: string;
   errorLogs?: string[];
   logs?: string[];
 }

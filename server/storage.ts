@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import {
   Product,
   Message,
@@ -36,6 +37,7 @@ interface DatabaseSchema {
 }
 
 const DB_FILE_PATH = path.join(process.cwd(), 'database.json');
+const TMP_DB_PATH = path.join(os.tmpdir(), 'vertex_lab_database.json');
 
 const INITIAL_PRODUCTS: Product[] = [
   {
@@ -420,8 +422,9 @@ class DatabaseManager {
 
   private loadDatabase(): DatabaseSchema {
     try {
-      if (fs.existsSync(DB_FILE_PATH)) {
-        const fileContent = fs.readFileSync(DB_FILE_PATH, 'utf-8');
+      const activePath = fs.existsSync(TMP_DB_PATH) ? TMP_DB_PATH : (fs.existsSync(DB_FILE_PATH) ? DB_FILE_PATH : null);
+      if (activePath) {
+        const fileContent = fs.readFileSync(activePath, 'utf-8');
         const parsed = JSON.parse(fileContent);
         
         // Merge and ensure fresh FAQs, knowledge docs and settings
@@ -469,7 +472,7 @@ class DatabaseManager {
         };
       }
     } catch (err) {
-      console.warn('Could not read existing database.json, initializing defaults:', err);
+      console.warn('Could not read existing database, initializing defaults:', err);
     }
 
     const defaultDb: DatabaseSchema = {
@@ -515,17 +518,26 @@ class DatabaseManager {
     try {
       fs.writeFileSync(DB_FILE_PATH, JSON.stringify(defaultDb, null, 2), 'utf-8');
     } catch (e) {
-      console.error('Failed to write initial database.json:', e);
+      try {
+        fs.writeFileSync(TMP_DB_PATH, JSON.stringify(defaultDb, null, 2), 'utf-8');
+      } catch (tmpErr) {
+        // In-memory fallback
+      }
     }
 
     return defaultDb;
   }
 
   private persist(): void {
+    const payload = JSON.stringify(this.data, null, 2);
     try {
-      fs.writeFileSync(DB_FILE_PATH, JSON.stringify(this.data, null, 2), 'utf-8');
+      fs.writeFileSync(DB_FILE_PATH, payload, 'utf-8');
     } catch (err) {
-      console.error('Error persisting database to disk:', err);
+      try {
+        fs.writeFileSync(TMP_DB_PATH, payload, 'utf-8');
+      } catch (tmpErr) {
+        // Safely maintain in memory without throwing
+      }
     }
   }
 

@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
+import { puter } from '@heyputer/puter.js';
 import { db } from './storage.js';
 import { Product, Message } from '../src/types.js';
 
@@ -133,19 +134,76 @@ CONTACT & STORE INFO:
 - Delivery Standard: 4 working days processing + 1-2 days Lahore / 2-5 days nationwide (Rs. 200 fee, Free above Rs. 4,999).
 - Return Policy: Strict No Return / No Refund policy for change of mind. 100% FREE replacement only if the item received is damaged or defective.`;
 
-  // Format conversation history for Gemini
+  // Format conversation history
   const recentHistory = chatHistory.slice(-8).map(m => ({
-    role: m.sender === 'customer' ? 'user' : 'model',
-    text: m.content,
+    role: m.sender === 'customer' ? 'user' : 'assistant',
+    content: m.content,
   }));
 
+  // 1. Try Puter.js for free Gemini access (no API keys required)
+  try {
+    const puterMessages = [
+      {
+        role: 'system',
+        content: `${systemPrompt}\n\nIMPORTANT: Respond with a JSON object in this exact format:
+{
+  "replyText": "Your friendly, comprehensive reply in English or Roman Urdu matching the user",
+  "recommendedProductIds": ["prod-id-1", "prod-id-2"],
+  "escalateToHuman": false,
+  "escalationReason": ""
+}`,
+      },
+      ...recentHistory,
+      {
+        role: 'user',
+        content: userMessage,
+      },
+    ];
+
+    const puterModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gpt-4o-mini'];
+    for (const model of puterModels) {
+      try {
+        const puterResponse: any = await puter.ai.chat(puterMessages as any, { model });
+        const textOutput = typeof puterResponse === 'string'
+          ? puterResponse
+          : (puterResponse?.message?.content || puterResponse?.text || JSON.stringify(puterResponse));
+
+        if (textOutput && textOutput.trim().length > 0) {
+          const cleanText = textOutput.replace(/```json\n?|```/g, '').trim();
+          try {
+            const parsed = JSON.parse(cleanText);
+            if (parsed.replyText) {
+              return {
+                replyText: parsed.replyText,
+                recommendedProductIds: Array.isArray(parsed.recommendedProductIds) ? parsed.recommendedProductIds : [],
+                escalateToHuman: Boolean(parsed.escalateToHuman),
+                escalationReason: parsed.escalationReason,
+              };
+            }
+          } catch {
+            return {
+              replyText: cleanText,
+              recommendedProductIds: [],
+              escalateToHuman: false,
+            };
+          }
+        }
+      } catch (puterErr) {
+        console.warn(`Puter AI attempt with model ${model} failed, trying next:`, puterErr);
+      }
+    }
+  } catch (outerPuterErr) {
+    console.warn('Puter.js execution notice:', outerPuterErr);
+  }
+
+  // 2. Try Google GenAI client if configured
   const ai = getGenAI();
 
   if (ai) {
     const contents = [
-      ...recentHistory.map(h => ({
-        role: h.role,
-        parts: [{ text: h.text }],
+      ...chatHistory.slice(-8).map(h => ({
+        role: h.sender === 'customer' ? 'user' : 'model',
+        parts: [{ text: h.content }],
       })),
       {
         role: 'user',
@@ -217,17 +275,15 @@ CONTACT & STORE INFO:
           (err?.message && (err.message.includes('503') || err.message.includes('high demand') || err.message.includes('RESOURCE_EXHAUSTED')));
 
         if (isUnavailableOrRateLimit) {
-          // Model temporarily busy, try next model in candidate list
           continue;
         } else {
-          // Non-transient error, break to grounded engine
           break;
         }
       }
     }
   }
 
-  // Intelligent fallback engine grounded on active database
+  // 3. Intelligent fallback engine grounded on active database
   return generateGroundedFallbackResponse(userMessage, activeProducts, activeFaqs, websiteSettings);
 }
 
