@@ -23,7 +23,13 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      api.getBroadcasts().then(setBroadcasts).catch(console.error);
+      api
+        .getBroadcasts()
+        .then(data => setBroadcasts(Array.isArray(data) ? data : []))
+        .catch(err => {
+          console.error(err);
+          setBroadcasts([]);
+        });
     }
   }, [isOpen]);
 
@@ -92,7 +98,7 @@ export const NotificationsDrawer: React.FC<NotificationsDrawerProps> = ({
             Recent Broadcasts
           </h4>
 
-          {broadcasts.length === 0 ? (
+          {!Array.isArray(broadcasts) || broadcasts.length === 0 ? (
             <div className="py-8 text-center text-xs text-slate-400">
               No recent notifications. You are all caught up!
             </div>

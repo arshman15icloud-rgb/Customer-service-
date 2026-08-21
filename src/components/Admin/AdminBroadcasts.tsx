@@ -17,10 +17,12 @@ export const AdminBroadcasts: React.FC = () => {
   const loadData = async () => {
     try {
       const [bcasts, custs] = await Promise.all([api.getBroadcasts(), api.getCustomers()]);
-      setBroadcasts(bcasts);
-      setCustomers(custs);
+      setBroadcasts(Array.isArray(bcasts) ? bcasts : []);
+      setCustomers(Array.isArray(custs) ? custs : []);
     } catch (err) {
       console.error(err);
+      setBroadcasts([]);
+      setCustomers([]);
     }
   };
 

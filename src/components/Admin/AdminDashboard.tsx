@@ -206,7 +206,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
             </div>
 
             <div className="space-y-3">
-              {notifications.length === 0 ? (
+              {!Array.isArray(notifications) || notifications.length === 0 ? (
                 <div className="py-8 text-center text-xs text-slate-400">
                   <CheckCircle className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-80" />
                   All customer inquiries are resolved or handled by AI. No pending escalations.
@@ -273,12 +273,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400">Sync Status:</span>
                   <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                    {syncStatus?.status.toUpperCase() || 'IDLE'}
+                    {syncStatus?.status ? syncStatus.status.toUpperCase() : 'IDLE'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400">Total Synced Articles:</span>
-                  <span className="font-bold text-white">{analytics.totalProducts} pieces</span>
+                  <span className="font-bold text-white">{analytics?.totalProducts || 0} pieces</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400">Scheduled Frequency:</span>
@@ -289,7 +289,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
               </div>
 
               {/* Sync Log Preview */}
-              {syncStatus?.logs && syncStatus.logs.length > 0 && (
+              {Array.isArray(syncStatus?.logs) && syncStatus.logs.length > 0 && (
                 <div className="p-3 rounded-2xl bg-slate-950/60 border border-slate-800/80 font-mono text-[11px] text-slate-400 space-y-1">
                   <span className="text-slate-400 text-[10px] uppercase font-bold block mb-1">
                     Latest Sync Log:
@@ -318,18 +318,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
       <div className="rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-xl">
         <h3 className="font-bold text-base text-white mb-3">Common Customer Inquiry Categories</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {analytics.topInquiryCategories.map((item, idx) => (
-            <div key={idx} className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800">
-              <span className="text-xs text-slate-400 block">{item.category}</span>
-              <span className="text-xl font-bold text-white mt-1 block">{item.count}</span>
-              <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                <div
-                  className="bg-indigo-500 h-full rounded-full"
-                  style={{ width: `${Math.min(100, item.count * 10)}%` }}
-                ></div>
+          {Array.isArray(analytics?.topInquiryCategories) &&
+            analytics.topInquiryCategories.map((item, idx) => (
+              <div key={idx} className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800">
+                <span className="text-xs text-slate-400 block">{item.category}</span>
+                <span className="text-xl font-bold text-white mt-1 block">{item.count}</span>
+                <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div
+                    className="bg-indigo-500 h-full rounded-full"
+                    style={{ width: `${Math.min(100, item.count * 10)}%` }}
+                  ></div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
     </div>

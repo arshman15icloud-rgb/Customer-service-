@@ -85,7 +85,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         {/* Sizes Pills */}
-        {product.sizes && product.sizes.length > 0 && (
+        {Array.isArray(product.sizes) && product.sizes.length > 0 && (
           <div className="flex flex-wrap items-center gap-1 my-1">
             <span className="text-[11px] text-[#9aa0a6] mr-1">Sizes:</span>
             {product.sizes.slice(0, 4).map(size => (

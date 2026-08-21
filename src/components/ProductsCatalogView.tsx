@@ -26,9 +26,10 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
     try {
       setLoading(true);
       const data = await api.getProducts(selectedCategory, searchQuery, false);
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Failed to load products:', err);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -39,8 +40,9 @@ export const ProductsCatalogView: React.FC<ProductsCatalogViewProps> = ({
   }, [selectedCategory, searchQuery]);
 
   // Client-side filtering & sorting
-  const filteredProducts = products
-    .filter(p => (p.salePrice || p.price) <= maxPrice)
+  const safeProducts = Array.isArray(products) ? products : [];
+  const filteredProducts = safeProducts
+    .filter(p => p && (p.salePrice || p.price) <= maxPrice)
     .sort((a, b) => {
       const priceA = a.salePrice || a.price;
       const priceB = b.salePrice || b.price;

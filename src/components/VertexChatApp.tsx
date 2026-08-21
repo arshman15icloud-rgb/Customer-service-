@@ -103,19 +103,22 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
   const loadChat = async () => {
     try {
       const convs = await api.getConversations('all', customerId);
-      setConversationsList(convs);
-      const myConv = convs.find(c => c.customerId === customerId);
+      const safeConvs = Array.isArray(convs) ? convs : [];
+      setConversationsList(safeConvs);
+      const myConv = safeConvs.find(c => c && c.customerId === customerId);
 
       if (myConv) {
         setConversation(myConv);
         const full = await api.getConversation(myConv.id);
-        setMessages(full.messages || []);
+        setMessages(full && Array.isArray(full.messages) ? full.messages : []);
       } else {
         setConversation(null);
         setMessages([]);
       }
     } catch (err) {
       console.error('Failed to load chat:', err);
+      setConversationsList([]);
+      setMessages([]);
     }
   };
 
@@ -300,7 +303,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
           <div className="text-[11px] font-semibold text-[#9aa0a6] uppercase tracking-wider px-3 mb-2">
             Recent Conversations
           </div>
-          {conversationsList.length === 0 ? (
+          {!Array.isArray(conversationsList) || conversationsList.length === 0 ? (
             <div className="px-3 py-2 text-xs text-[#5f6368]">
               No past conversations yet
             </div>
@@ -437,7 +440,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
             </div>
           ) : (
             <div className="max-w-3xl mx-auto w-full space-y-7 pb-4">
-              {messages.map((msg, index) => {
+              {(Array.isArray(messages) ? messages : []).map((msg, index) => {
                 const isCustomer = msg.sender === 'customer';
                 const isCopied = copiedMessageId === msg.id;
                 const isSpeaking = speakingMessageId === msg.id;
@@ -465,7 +468,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
                       </div>
 
                       {/* Embedded Recommended Products */}
-                      {msg.products && msg.products.length > 0 && (
+                      {Array.isArray(msg.products) && msg.products.length > 0 && (
                         <div className="w-full pt-2">
                           <div className="flex sm:grid sm:grid-cols-2 gap-3 overflow-x-auto pb-2 no-scrollbar">
                             {msg.products.map(product => (

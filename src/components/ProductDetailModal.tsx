@@ -18,8 +18,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   if (!product) return null;
 
-  const currentSelectedSize = selectedSize || product.sizes[0] || 'M';
-  const hasDiscount = product.salePrice && product.salePrice < product.price;
+  const sizesList = Array.isArray(product.sizes) ? product.sizes : [];
+  const currentSelectedSize = selectedSize || (sizesList.length > 0 ? sizesList[0] : 'M');
+  const hasDiscount = Boolean(product.salePrice && product.salePrice < product.price);
 
   const handleShare = () => {
     navigator.clipboard.writeText(product.productUrl || window.location.href);
@@ -120,20 +121,24 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               </div>
 
               <div className="flex flex-wrap gap-2">
-                {product.sizes.map(size => (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => setSelectedSize(size)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-mono font-medium transition-all ${
-                      currentSelectedSize === size
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/60 border border-indigo-400'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
+                {sizesList.length > 0 ? (
+                  sizesList.map(size => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setSelectedSize(size)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-mono font-medium transition-all ${
+                        currentSelectedSize === size
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/60 border border-indigo-400'
+                          : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700/60'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))
+                ) : (
+                  <span className="text-xs text-slate-400">Standard Free Size</span>
+                )}
               </div>
             </div>
 

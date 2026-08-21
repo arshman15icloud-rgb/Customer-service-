@@ -30,9 +30,10 @@ export const AdminProducts: React.FC = () => {
     try {
       setLoading(true);
       const data = await api.getProducts(selectedCategory, search, true);
-      setProducts(data);
+      setProducts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -193,7 +194,7 @@ export const AdminProducts: React.FC = () => {
                     Loading products...
                   </td>
                 </tr>
-              ) : products.length === 0 ? (
+              ) : !Array.isArray(products) || products.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
                     No products found in catalog.

@@ -13,9 +13,10 @@ export const AdminKnowledgeBase: React.FC = () => {
     try {
       setLoading(true);
       const data = await api.getKnowledgeDocs();
-      setDocs(data);
+      setDocs(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setDocs([]);
     } finally {
       setLoading(false);
     }

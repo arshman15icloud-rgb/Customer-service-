@@ -14,9 +14,10 @@ export const AdminFaqs: React.FC = () => {
     try {
       setLoading(true);
       const data = await api.getFaqs();
-      setFaqs(data);
+      setFaqs(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setFaqs([]);
     } finally {
       setLoading(false);
     }

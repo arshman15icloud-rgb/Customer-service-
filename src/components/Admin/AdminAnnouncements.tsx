@@ -13,9 +13,10 @@ export const AdminAnnouncements: React.FC = () => {
     try {
       setLoading(true);
       const data = await api.getAnnouncements(false);
-      setAnnouncements(data);
+      setAnnouncements(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setAnnouncements([]);
     } finally {
       setLoading(false);
     }

@@ -61,9 +61,11 @@ export const FaqView: React.FC<FaqViewProps> = ({ onAskAiWithQuestion }) => {
       try {
         setLoading(true);
         const data = await api.getFaqs();
-        setFaqs(data.filter(f => f.isActive));
+        const safeData = Array.isArray(data) ? data : [];
+        setFaqs(safeData.filter(f => f && f.isActive));
       } catch (err) {
         console.error('Failed to load FAQs:', err);
+        setFaqs([]);
       } finally {
         setLoading(false);
       }
@@ -71,11 +73,13 @@ export const FaqView: React.FC<FaqViewProps> = ({ onAskAiWithQuestion }) => {
     loadFaqs();
   }, []);
 
-  const filteredFaqs = faqs.filter(faq => {
+  const safeFaqs = Array.isArray(faqs) ? faqs : [];
+  const filteredFaqs = safeFaqs.filter(faq => {
+    if (!faq) return false;
     const matchesCategory =
       activeCategory === 'All' ||
-      faq.category.toLowerCase().includes(activeCategory.toLowerCase()) ||
-      activeCategory.toLowerCase().includes(faq.category.toLowerCase());
+      (faq.category && faq.category.toLowerCase().includes(activeCategory.toLowerCase())) ||
+      (faq.category && activeCategory.toLowerCase().includes(faq.category.toLowerCase()));
 
     const matchesSearch =
       !search ||

@@ -41,12 +41,14 @@ export const AdminInbox: React.FC = () => {
   const loadConversations = async () => {
     try {
       const data = await api.getConversations(filterStatus, searchQuery);
-      setConversations(data);
-      if (!selectedConvId && data.length > 0) {
-        setSelectedConvId(data[0].id);
+      const safeData = Array.isArray(data) ? data : [];
+      setConversations(safeData);
+      if (!selectedConvId && safeData.length > 0) {
+        setSelectedConvId(safeData[0].id);
       }
     } catch (err) {
       console.error('Error fetching conversations:', err);
+      setConversations([]);
     } finally {
       setLoading(false);
     }
@@ -55,17 +57,23 @@ export const AdminInbox: React.FC = () => {
   const loadActiveConversation = async (id: string) => {
     try {
       const data = await api.getConversation(id);
-      setActiveConv(data.conversation);
-      setMessages(data.messages);
-      setCustomer(data.customer || null);
+      if (data) {
+        setActiveConv(data.conversation || null);
+        setMessages(Array.isArray(data.messages) ? data.messages : []);
+        setCustomer(data.customer || null);
+      }
     } catch (err) {
       console.error('Error loading active conversation:', err);
+      setMessages([]);
     }
   };
 
   useEffect(() => {
     loadConversations();
-    api.getProducts().then(setProducts).catch(console.error);
+    api
+      .getProducts()
+      .then(p => setProducts(Array.isArray(p) ? p : []))
+      .catch(console.error);
   }, [filterStatus, searchQuery]);
 
   useEffect(() => {
@@ -80,7 +88,10 @@ export const AdminInbox: React.FC = () => {
       if (selectedConvId) {
         loadActiveConversation(selectedConvId);
       }
-      api.getConversations(filterStatus, searchQuery).then(setConversations).catch(() => {});
+      api
+        .getConversations(filterStatus, searchQuery)
+        .then(c => setConversations(Array.isArray(c) ? c : []))
+        .catch(() => {});
     }, 4000);
     return () => clearInterval(interval);
   }, [selectedConvId, filterStatus, searchQuery]);
@@ -191,7 +202,7 @@ export const AdminInbox: React.FC = () => {
         <div className="flex-1 overflow-y-auto divide-y divide-slate-800/60">
           {loading ? (
             <div className="py-12 text-center text-xs text-slate-400">Loading inbox...</div>
-          ) : conversations.length === 0 ? (
+          ) : !Array.isArray(conversations) || conversations.length === 0 ? (
             <div className="py-12 text-center text-xs text-slate-400 px-4">
               No conversations found under this filter.
             </div>
@@ -315,7 +326,7 @@ export const AdminInbox: React.FC = () => {
 
             {/* Message Stream */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-grid-subtle">
-              {messages.map((msg, i) => {
+              {(Array.isArray(messages) ? messages : []).map((msg, i) => {
                 const isCustomer = msg.sender === 'customer';
                 const isSystem = msg.sender === 'system';
 
@@ -337,7 +348,7 @@ export const AdminInbox: React.FC = () => {
                     <div className="flex items-center gap-1.5 text-[10px] text-slate-400 px-1 mb-1">
                       <span className="font-semibold text-slate-300">
                         {isCustomer
-                          ? activeConv.customerName
+                          ? activeConv?.customerName || 'Customer'
                           : msg.sender === 'human'
                           ? `Agent (${msg.senderName || 'Staff'})`
                           : 'Vertex AI Model'}
@@ -358,7 +369,7 @@ export const AdminInbox: React.FC = () => {
                       <div className="whitespace-pre-wrap">{msg.content}</div>
 
                       {/* Product mentions */}
-                      {msg.productIds && msg.productIds.length > 0 && (
+                      {Array.isArray(msg.productIds) && msg.productIds.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-white/20 text-[11px] flex flex-wrap gap-1">
                           <span className="font-semibold">Attached Products:</span>
                           {msg.productIds.map(pid => (
@@ -389,25 +400,26 @@ export const AdminInbox: React.FC = () => {
                   </button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-36 overflow-y-auto">
-                  {products.map(p => {
-                    const isSelected = selectedProductIds.includes(p.id);
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedProductIds(prev => prev.filter(id => id !== p.id));
-                          } else {
-                            setSelectedProductIds(prev => [...prev, p.id]);
-                          }
-                        }}
-                        className={`p-2 rounded-xl text-left text-xs border transition-all ${
-                          isSelected
-                            ? 'bg-indigo-950 border-indigo-500 text-white'
-                            : 'bg-slate-900 border-slate-800 text-slate-300'
-                        }`}
-                      >
+                  {Array.isArray(products) &&
+                    products.map(p => {
+                      const isSelected = selectedProductIds.includes(p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedProductIds(prev => prev.filter(id => id !== p.id));
+                            } else {
+                              setSelectedProductIds(prev => [...prev, p.id]);
+                            }
+                          }}
+                          className={`p-2 rounded-xl text-left text-xs border transition-all ${
+                            isSelected
+                              ? 'bg-indigo-950 border-indigo-500 text-white'
+                              : 'bg-slate-900 border-slate-800 text-slate-300'
+                          }`}
+                        >
                         <p className="font-semibold truncate">{p.title}</p>
                         <p className="text-[10px] text-indigo-400">Rs. {p.price}</p>
                       </button>

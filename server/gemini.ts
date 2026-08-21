@@ -1,5 +1,4 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { puter } from '@heyputer/puter.js';
 import { db } from './storage.js';
 import { Product, Message } from '../src/types.js';
 
@@ -140,63 +139,7 @@ CONTACT & STORE INFO:
     content: m.content,
   }));
 
-  // 1. Try Puter.js for free Gemini access (no API keys required)
-  try {
-    const puterMessages = [
-      {
-        role: 'system',
-        content: `${systemPrompt}\n\nIMPORTANT: Respond with a JSON object in this exact format:
-{
-  "replyText": "Your friendly, comprehensive reply in English or Roman Urdu matching the user",
-  "recommendedProductIds": ["prod-id-1", "prod-id-2"],
-  "escalateToHuman": false,
-  "escalationReason": ""
-}`,
-      },
-      ...recentHistory,
-      {
-        role: 'user',
-        content: userMessage,
-      },
-    ];
-
-    const puterModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gpt-4o-mini'];
-    for (const model of puterModels) {
-      try {
-        const puterResponse: any = await puter.ai.chat(puterMessages as any, { model });
-        const textOutput = typeof puterResponse === 'string'
-          ? puterResponse
-          : (puterResponse?.message?.content || puterResponse?.text || JSON.stringify(puterResponse));
-
-        if (textOutput && textOutput.trim().length > 0) {
-          const cleanText = textOutput.replace(/```json\n?|```/g, '').trim();
-          try {
-            const parsed = JSON.parse(cleanText);
-            if (parsed.replyText) {
-              return {
-                replyText: parsed.replyText,
-                recommendedProductIds: Array.isArray(parsed.recommendedProductIds) ? parsed.recommendedProductIds : [],
-                escalateToHuman: Boolean(parsed.escalateToHuman),
-                escalationReason: parsed.escalationReason,
-              };
-            }
-          } catch {
-            return {
-              replyText: cleanText,
-              recommendedProductIds: [],
-              escalateToHuman: false,
-            };
-          }
-        }
-      } catch (puterErr) {
-        console.warn(`Puter AI attempt with model ${model} failed, trying next:`, puterErr);
-      }
-    }
-  } catch (outerPuterErr) {
-    console.warn('Puter.js execution notice:', outerPuterErr);
-  }
-
-  // 2. Try Google GenAI client if configured
+  // 1. Try Google GenAI client if configured
   const ai = getGenAI();
 
   if (ai) {

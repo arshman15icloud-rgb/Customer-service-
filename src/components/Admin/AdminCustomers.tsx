@@ -17,9 +17,10 @@ export const AdminCustomers: React.FC<AdminCustomersProps> = ({ onSelectCustomer
     try {
       setLoading(true);
       const data = await api.getCustomers();
-      setCustomers(data);
+      setCustomers(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setCustomers([]);
     } finally {
       setLoading(false);
     }
@@ -42,11 +43,13 @@ export const AdminCustomers: React.FC<AdminCustomersProps> = ({ onSelectCustomer
     }
   };
 
-  const filteredCustomers = customers.filter(
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  const filteredCustomers = safeCustomers.filter(
     c =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.id.toLowerCase().includes(search.toLowerCase()) ||
-      (c.email && c.email.toLowerCase().includes(search.toLowerCase()))
+      c &&
+      (c.name.toLowerCase().includes(search.toLowerCase()) ||
+        c.id.toLowerCase().includes(search.toLowerCase()) ||
+        (c.email && c.email.toLowerCase().includes(search.toLowerCase())))
   );
 
   return (

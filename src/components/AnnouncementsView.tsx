@@ -17,9 +17,10 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ onAskAiWit
       try {
         setLoading(true);
         const data = await api.getAnnouncements(true);
-        setAnnouncements(data);
+        setAnnouncements(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Failed to load announcements:', err);
+        setAnnouncements([]);
       } finally {
         setLoading(false);
       }
