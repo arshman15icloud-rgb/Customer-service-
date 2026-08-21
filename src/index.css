@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  body {
+    background-color: #131314;
+    color: #e3e3e3;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Gemini Dark Theme Surfaces */
+.bg-gemini-bg {
+  background-color: #131314;
+}
+
+.bg-gemini-surface {
+  background-color: #1e1f20;
+}
+
+.bg-gemini-surface-hover {
+  background-color: #282a2c;
+}
+
+.bg-gemini-surface-variant {
+  background-color: #232527;
+}
+
+.border-gemini-border {
+  border-color: #333538;
+}
+
+.border-gemini-border-subtle {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Google Gemini Gradient Text */
+.gemini-gradient-text {
+  background: linear-gradient(74deg, #4285f4 0%, #9b72cb 35%, #d96570 70%, #f4b400 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gemini-gradient-text-subtle {
+  background: linear-gradient(90deg, #78d9ec 0%, #a8c7fa 50%, #c5b4e3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Google Gemini Glow Button / Pill */
+.gemini-btn-primary {
+  background: linear-gradient(135deg, #1e3a8a 0%, #4338ca 50%, #6366f1 100%);
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gemini-btn-primary:hover {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.4), 0 0 40px rgba(67, 56, 202, 0.2);
+}
+
+/* Gemini Star Shimmer Animation */
+@keyframes gemini-pulse-glow {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+    filter: drop-shadow(0 0 8px rgba(66, 133, 244, 0.6));
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 16px rgba(155, 114, 203, 0.8));
+  }
+}
+
+.animate-gemini-glow {
+  animation: gemini-pulse-glow 3s infinite ease-in-out;
+}
+
+/* Custom Gemini-style modern scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.font-display {
+  font-family: 'Syne', sans-serif;
+}
+
+.font-mono-code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Gemini Glass & Glow utilities */
+.glass-panel {
+  background: rgba(30, 31, 32, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-subtle {
+  background: rgba(40, 42, 44, 0.6);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Gemini Subtle ambient background glow */
+.bg-gemini-ambient {
+  background-image: 
+    radial-gradient(circle at 50% -20%, rgba(66, 133, 244, 0.09) 0%, transparent 60%),
+    radial-gradient(circle at 10% 40%, rgba(155, 114, 203, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 90% 60%, rgba(217, 101, 112, 0.05) 0%, transparent 50%);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+

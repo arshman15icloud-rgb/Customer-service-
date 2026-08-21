@@ -1,0 +1,6 @@
+{
+  "name": "Vertex Lab Customer Care",
+  "description": "Production-ready AI customer care platform, product catalog synchronization, hybrid human takeover, and admin operations for Vertex Lab clothing brand.",
+  "requestFramePermissions": ["notifications"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
