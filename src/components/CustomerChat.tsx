@@ -71,22 +71,22 @@ export const CustomerChat: React.FC<CustomerChatProps> = ({
   // Gemini Style Category Prompt Cards
   const geminiPromptCards = [
     {
-      icon: Shirt,
+      icon: Truck,
       color: 'text-[#78D9EC]',
       bg: 'bg-[#78D9EC]/10',
       border: 'border-[#78D9EC]/20',
+      title: 'Track My Order Status',
+      description: 'Check live Tatami embroidery & courier dispatch for your parcel',
+      prompt: 'Can you check my order status? I would like to track my order.',
+    },
+    {
+      icon: Shirt,
+      color: 'text-[#9B72CB]',
+      bg: 'bg-[#9B72CB]/10',
+      border: 'border-[#9B72CB]/20',
       title: 'Explore Anime Streetwear',
       description: 'Spider-Man, Toji Fushiguro & Sukuna 280 GSM heavy-knit tees',
       prompt: 'Tell me about your latest anime streetwear drops, GSM fabric quality, and current prices in PKR.',
-    },
-    {
-      icon: Truck,
-      color: 'text-[#4285F4]',
-      bg: 'bg-[#4285F4]/10',
-      border: 'border-[#4285F4]/20',
-      title: 'Delivery & Shipping Times',
-      description: '24–48 hrs in Lahore, 2–3 days to Karachi, Islamabad & nationwide',
-      prompt: 'What are your delivery times to Lahore, Karachi, and Islamabad? Do you offer Free Shipping?',
     },
     {
       icon: ShieldAlert,
@@ -99,9 +99,9 @@ export const CustomerChat: React.FC<CustomerChatProps> = ({
     },
     {
       icon: Layers,
-      color: 'text-[#9B72CB]',
-      bg: 'bg-[#9B72CB]/10',
-      border: 'border-[#9B72CB]/20',
+      color: 'text-[#4285F4]',
+      bg: 'bg-[#4285F4]/10',
+      border: 'border-[#4285F4]/20',
       title: 'Tatami Embroidery Specs',
       description: '100,000+ precision needle stitches and garment washing care',
       prompt: 'How is the Tatami embroidery done and how should I wash Vertex Lab oversized garments to maintain embroidery quality?',
@@ -109,6 +109,7 @@ export const CustomerChat: React.FC<CustomerChatProps> = ({
   ];
 
   const quickPrompts = [
+    'Where is my order? Check my order status',
     'Tell me about Spider-Man & Toji embroidered tees',
     'What is your delivery time to Lahore / Karachi?',
     'What is your damaged item replacement policy?',

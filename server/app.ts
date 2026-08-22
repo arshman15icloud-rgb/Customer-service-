@@ -33,10 +33,26 @@ export function createExpressApp() {
   // 1. Chat & Conversations
   apiRouter.post('/chat/send', async (req, res) => {
     try {
-      const { customerId, customerName, email, message, conversationId, assistantMode } = req.body;
+      const { customerId, customerName, email, message, conversationId, assistantMode, user } = req.body;
 
       if (!customerId || !message) {
         return res.status(400).json({ error: 'customerId and message are required' });
+      }
+
+      // Determine currentUser for intelligent context
+      let currentUser = user;
+      if (!currentUser && customerId) {
+        const foundUser = db.getUserById(customerId) || (email ? db.getUserByEmail(email) : undefined);
+        if (foundUser) {
+          currentUser = foundUser;
+        }
+      }
+      if (!currentUser && customerName) {
+        currentUser = {
+          id: customerId,
+          name: customerName,
+          email: email || '',
+        };
       }
 
       // Get or create conversation
@@ -45,7 +61,7 @@ export function createExpressApp() {
         : db.getConversationByCustomerId(customerId);
 
       if (!conv) {
-        conv = db.getOrCreateConversation(customerId, customerName, email);
+        conv = db.getOrCreateConversation(customerId, currentUser?.name || customerName, currentUser?.email || email);
       }
 
       // Save customer message
@@ -58,7 +74,7 @@ export function createExpressApp() {
       });
 
       // Update customer profile
-      db.getOrCreateCustomer(customerId, customerName, email);
+      db.getOrCreateCustomer(customerId, currentUser?.name || customerName, currentUser?.email || email);
 
       // Check if conversation is in Human takeover mode
       if (conv.status === 'human') {
@@ -78,10 +94,10 @@ export function createExpressApp() {
         });
       }
 
-      // Otherwise, AI responds
+      // Otherwise, AI responds with full user account context
       const history = db.getMessages(conv.id);
       const chosenMode = (assistantMode === 'jenny' || assistantMode === 'duo' || assistantMode === 'gemini') ? assistantMode : 'gemini';
-      const aiRes = await generateAICustomerCareResponse(conv.id, message, history, chosenMode);
+      const aiRes = await generateAICustomerCareResponse(conv.id, message, history, chosenMode, currentUser);
 
       let aiMsg = null;
       let senderName = db.getAiSettings().aiName || 'Vertex AI Concierge';
@@ -310,9 +326,9 @@ export function createExpressApp() {
 
   apiRouter.put('/products/:id', (req, res) => {
     try {
-      const existing = db.getProductById(req.params.id);
-      if (!existing) return res.status(404).json({ error: 'Product not found' });
-      const updated = db.saveProduct({ ...existing, ...req.body });
+      const existing = db.getProductById(req.params.id) || db.getProducts(undefined, undefined, true).find(p => p.id === req.params.id);
+      const productToSave = existing ? { ...existing, ...req.body, id: req.params.id } : { ...req.body, id: req.params.id };
+      const updated = db.saveProduct(productToSave);
       res.json(updated);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -322,6 +338,70 @@ export function createExpressApp() {
   apiRouter.delete('/products/:id', (req, res) => {
     const deleted = db.deleteProduct(req.params.id);
     res.json({ success: deleted });
+  });
+
+  // Orders Management API
+  apiRouter.get('/orders', (req, res) => {
+    try {
+      const { search, status } = req.query;
+      const q = typeof search === 'string' ? search : undefined;
+      const st = typeof status === 'string' ? status : undefined;
+      const orders = db.getOrders(q, st);
+      res.json(orders);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  apiRouter.get('/orders/:id', (req, res) => {
+    try {
+      const order = db.getOrderById(req.params.id);
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+      res.json(order);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  apiRouter.post('/orders', (req, res) => {
+    try {
+      const orderData = req.body;
+      const saved = db.saveOrder(orderData);
+      res.json(saved);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  apiRouter.put('/orders/:id', (req, res) => {
+    try {
+      const orderData = { ...req.body, id: req.params.id };
+      const saved = db.saveOrder(orderData);
+      res.json(saved);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  apiRouter.patch('/orders/:id/status', (req, res) => {
+    try {
+      const { status, trackingNumber, courier } = req.body;
+      if (!status) return res.status(400).json({ error: 'Status is required' });
+      const updated = db.updateOrderStatus(req.params.id, status, trackingNumber, courier);
+      if (!updated) return res.status(404).json({ error: 'Order not found' });
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  apiRouter.delete('/orders/:id', (req, res) => {
+    try {
+      const deleted = db.deleteOrder(req.params.id);
+      res.json({ success: deleted });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   // 3. Website Product Source & Sync Engine
@@ -526,7 +606,153 @@ export function createExpressApp() {
     res.json(db.getAnalytics());
   });
 
-  // 13. PWA Push Subscription
+  // 13. User Authentication & Profiles (Customer Account System)
+  apiRouter.post('/auth/register', (req, res) => {
+    try {
+      const { email, password, name, phone, address, city, postalCode } = req.body;
+      if (!email || !name) {
+        return res.status(400).json({ error: 'Name and Email are required' });
+      }
+
+      const existing = db.getUserByEmail(email);
+      if (existing) {
+        // Update profile
+        const updated = db.updateUser(existing.id, {
+          name,
+          phone,
+          address,
+          city,
+          postalCode,
+          ...(password ? { password } : {}),
+        });
+        return res.json({ success: true, user: updated, message: 'Account updated successfully' });
+      }
+
+      const newUser = db.registerUser({
+        name,
+        email,
+        password: password || 'password123',
+        phone: phone || '+92 300 0000000',
+        address: address || '',
+        city: city || 'Lahore',
+        postalCode: postalCode || '',
+      });
+
+      res.status(201).json({ success: true, user: newUser, token: 'token_' + newUser.id });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  apiRouter.post('/auth/login', (req, res) => {
+    try {
+      const { email, password } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+      }
+
+      const user = db.authenticateUser(email, password);
+      if (!user) {
+        // If user doesn't exist, create an account if it's an interactive login attempt
+        const nameGuess = email.split('@')[0].replace(/[._-]/g, ' ');
+        const formattedName = nameGuess.charAt(0).toUpperCase() + nameGuess.slice(1);
+        const createdUser = db.registerUser({
+          email,
+          name: formattedName,
+          password: password || 'password123',
+        });
+        return res.json({ success: true, user: createdUser, token: 'token_' + createdUser.id });
+      }
+
+      res.json({ success: true, user, token: 'token_' + user.id });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  apiRouter.get('/auth/me', (req, res) => {
+    try {
+      const { id, email } = req.query;
+      let user = null;
+      if (id && typeof id === 'string') {
+        user = db.getUserById(id);
+      }
+      if (!user && email && typeof email === 'string') {
+        user = db.getUserByEmail(email);
+      }
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      res.json({ user });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  apiRouter.put('/auth/profile', (req, res) => {
+    try {
+      const { id, email, ...updates } = req.body;
+      let targetUser = null;
+      if (id) targetUser = db.getUserById(id);
+      if (!targetUser && email) targetUser = db.getUserByEmail(email);
+
+      if (!targetUser) {
+        return res.status(404).json({ error: 'User not found to update' });
+      }
+
+      const updated = db.updateUser(targetUser.id, updates);
+      res.json({ success: true, user: updated });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  apiRouter.get('/user/orders', (req, res) => {
+    try {
+      const { id, email, phone, name } = req.query;
+      const userParam = {
+        id: typeof id === 'string' ? id : undefined,
+        email: typeof email === 'string' ? email : undefined,
+        phone: typeof phone === 'string' ? phone : undefined,
+        name: typeof name === 'string' ? name : undefined,
+      };
+      const orders = db.findOrdersForUser(userParam);
+      res.json(orders);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  apiRouter.get('/users', (req, res) => {
+    try {
+      res.json(db.getUsers());
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // 14. Image Upload Endpoint (For Device Gallery & Product Photos)
+  apiRouter.post('/upload/image', (req, res) => {
+    try {
+      const { image, name, filename } = req.body;
+      if (!image) {
+        return res.status(400).json({ error: 'Image data is required' });
+      }
+
+      // If already a valid data URL or web URL, return it directly or normalize it
+      const imageUrl = image;
+      res.json({
+        success: true,
+        imageUrl,
+        name: name || filename || 'uploaded_image.jpg',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Upload failed: ' + err.message });
+    }
+  });
+
+  // 15. PWA Push Subscription
   apiRouter.post('/push/subscribe', (req, res) => {
     const { customerId, subscription } = req.body;
     if (customerId) {

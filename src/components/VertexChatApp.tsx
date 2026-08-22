@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Message, Conversation, Product, WebsiteSettings, AISettings } from '../types';
+import { Message, Conversation, Product, WebsiteSettings, AISettings, UserAccount } from '../types';
 import { api } from '../lib/api';
 import { VertexSparkleIcon } from './VertexSparkleIcon';
 import { ProductCard } from './ProductCard';
@@ -25,13 +25,15 @@ import {
   Check,
   X,
   Sparkles,
-  HeartHandshake
+  HeartHandshake,
+  UserCheck
 } from 'lucide-react';
 
 interface VertexChatAppProps {
   customerId: string;
   customerName: string;
   customerEmail: string;
+  currentUser?: UserAccount | null;
   websiteSettings: WebsiteSettings;
   aiSettings: AISettings;
   onOpenAdmin: () => void;
@@ -43,6 +45,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
   customerId,
   customerName,
   customerEmail,
+  currentUser,
   websiteSettings,
   aiSettings,
   onOpenAdmin,
@@ -72,6 +75,12 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
   // Curated suggestion prompts
   const suggestionPrompts = [
     {
+      icon: Truck,
+      title: 'Track Order & Status',
+      desc: 'Check live Tatami embroidery, packaging & courier tracking for your parcel',
+      prompt: 'Can you check my order status? I would like to track my order.',
+    },
+    {
       icon: Shirt,
       title: 'Anime Drops & Fabric Specs',
       desc: 'Spider-Man, Toji & Sukuna 240–280 GSM heavyweight streetwear',
@@ -88,12 +97,6 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
       title: 'Brand Story & Lahore Studio',
       desc: 'Independent design collective & Lab11 studio craftsmanship',
       prompt: 'Who is the brand owner of Vertex Lab and what is the story behind your Lahore design studio?',
-    },
-    {
-      icon: Truck,
-      title: 'Pakistan Delivery & Free Shipping',
-      desc: 'Lahore (1-2 days), Nationwide (2-5 days) & 100% Free Replacement',
-      prompt: 'What are your delivery times across Pakistan, shipping charges, and damaged item replacement policy?',
     },
   ];
 
@@ -202,9 +205,10 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
       const response = await api.sendMessage({
         customerId,
         message: text,
-        customerName,
-        email: customerEmail,
+        customerName: currentUser?.name || customerName,
+        email: currentUser?.email || customerEmail,
         conversationId: conversation?.id,
+        user: currentUser,
       });
 
       if (response && response.conversation) {

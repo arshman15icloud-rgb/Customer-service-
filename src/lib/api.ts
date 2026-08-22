@@ -1,5 +1,7 @@
 import {
   Product,
+  Order,
+  OrderStatus,
   Message,
   Conversation,
   Customer,
@@ -12,6 +14,7 @@ import {
   SyncStatus,
   AdminNotification,
   AnalyticsData,
+  UserAccount,
 } from '../types';
 
 async function handleResponse<T>(res: Response): Promise<T> {
@@ -42,6 +45,7 @@ export const api = {
     message: string;
     conversationId?: string;
     assistantMode?: 'gemini' | 'jenny' | 'duo';
+    user?: UserAccount | null;
   }): Promise<{
     conversation: Conversation;
     customerMessage: Message;
@@ -140,6 +144,54 @@ export const api = {
 
   async deleteProduct(id: string): Promise<{ success: boolean }> {
     const res = await fetch(`/api/products/${id}`, {
+      method: 'DELETE',
+    });
+    return handleResponse(res);
+  },
+
+  // Orders
+  async getOrders(status = 'all', search = ''): Promise<Order[]> {
+    const params = new URLSearchParams();
+    if (status && status !== 'all') params.append('status', status);
+    if (search) params.append('search', search);
+    const res = await fetch(`/api/orders?${params.toString()}`);
+    return handleResponse(res);
+  },
+
+  async getOrder(id: string): Promise<Order> {
+    const res = await fetch(`/api/orders/${id}`);
+    return handleResponse(res);
+  },
+
+  async saveOrder(order: Partial<Order>): Promise<Order> {
+    if (order.id && !order.id.startsWith('new-')) {
+      const res = await fetch(`/api/orders/${order.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order),
+      });
+      return handleResponse(res);
+    } else {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order),
+      });
+      return handleResponse(res);
+    }
+  },
+
+  async updateOrderStatus(id: string, status: OrderStatus, trackingNumber?: string, courier?: string): Promise<Order> {
+    const res = await fetch(`/api/orders/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, trackingNumber, courier }),
+    });
+    return handleResponse(res);
+  },
+
+  async deleteOrder(id: string): Promise<{ success: boolean }> {
+    const res = await fetch(`/api/orders/${id}`, {
       method: 'DELETE',
     });
     return handleResponse(res);
@@ -379,6 +431,70 @@ export const api = {
   // Analytics
   async getAnalytics(): Promise<AnalyticsData> {
     const res = await fetch('/api/analytics');
+    return handleResponse(res);
+  },
+
+  // Customer User Auth & Profile
+  async registerUser(userData: {
+    name: string;
+    email: string;
+    password?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    postalCode?: string;
+  }): Promise<{ success: boolean; user: UserAccount; token?: string }> {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+    return handleResponse(res);
+  },
+
+  async loginUser(email: string, password?: string): Promise<{ success: boolean; user: UserAccount; token?: string }> {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    return handleResponse(res);
+  },
+
+  async getCurrentUser(id?: string, email?: string): Promise<{ user: UserAccount }> {
+    const params = new URLSearchParams();
+    if (id) params.append('id', id);
+    if (email) params.append('email', email);
+    const res = await fetch(`/api/auth/me?${params.toString()}`);
+    return handleResponse(res);
+  },
+
+  async updateUserProfile(userData: Partial<UserAccount> & { id: string }): Promise<{ success: boolean; user: UserAccount }> {
+    const res = await fetch('/api/auth/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+    return handleResponse(res);
+  },
+
+  async getUserOrders(params: { id?: string; email?: string; phone?: string; name?: string }): Promise<Order[]> {
+    const query = new URLSearchParams();
+    if (params.id) query.append('id', params.id);
+    if (params.email) query.append('email', params.email);
+    if (params.phone) query.append('phone', params.phone);
+    if (params.name) query.append('name', params.name);
+    const res = await fetch(`/api/user/orders?${query.toString()}`);
+    return handleResponse(res);
+  },
+
+  // Image Upload / Device Gallery
+  async uploadImage(image: string, name?: string): Promise<{ success: boolean; imageUrl: string; name: string }> {
+    const res = await fetch('/api/upload/image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image, name }),
+    });
     return handleResponse(res);
   },
 

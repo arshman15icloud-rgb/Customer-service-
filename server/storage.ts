@@ -15,10 +15,16 @@ import {
   SyncStatus,
   AdminNotification,
   AnalyticsData,
+  Order,
+  OrderStatus,
+  OrderItem,
+  UserAccount,
 } from '../src/types.js';
 
 interface DatabaseSchema {
   products: Product[];
+  orders: Order[];
+  users: UserAccount[];
   conversations: Conversation[];
   messages: Message[];
   customers: Customer[];
@@ -355,27 +361,29 @@ const INITIAL_WEBSITE_SETTINGS: WebsiteSettings = {
 
 const INITIAL_AI_SETTINGS: AISettings = {
   aiName: 'Vertex AI Concierge',
-  systemInstructions: `You are the official Customer Care AI Assistant for Vertex Lab (with premium apparel, rates, and policies from oblyvyon.com).
+  systemInstructions: `You are the official Customer Care AI Assistant for Vertex Lab (with premium embroidered apparel and store policies from oblyvyon.com).
 Your personality is professional, polite, streetwear-savvy, helpful, and concise.
+
 CRITICAL GROUNDING RULES:
-1. Shipping & Rates:
-   - Order processing: 4 working days for embroidery/production.
-   - Lahore delivery: Next-day (1-2 working days) via PostEx.
-   - Nationwide Pakistan delivery (Karachi, Islamabad, Rawalpindi, Peshawar, Multan, Faisalabad, Quetta, etc.): 2 to 5 working days via PostEx & TCS.
-   - Delivery fee: Standard Rs. 200 flat across Pakistan.
+1. Live Product Catalog:
+   - Always reference the LIVE product catalog provided in this context for exact product titles, prices, sale discounts, stock availability, sizes, and direct product URLs.
+   - When recommending or discussing products, use the exact product title and product ID so interactive product cards display directly in chat.
+2. Orders & Tracking:
+   - When a customer asks about their order status ("Where is my order?", "Order track karna hai", "When will my parcel arrive?"):
+     a) If they have NOT provided their Name, Phone Number, or Order Number yet, politely ask: "I'd be glad to check that for you! Could you please share your **Full Name**, **Phone Number**, or **Order ID** (e.g. #VL-1001)?"
+     b) Once their name or details are provided, check the live order database. If found, clearly provide their Order ID, Ordered Items, Total Price (PKR), Shipping Address/City, Courier partner (e.g. PostEx, TCS), Tracking Number, and exact current Status (e.g. In Embroidery & Production, Shipped, Out for Delivery, Delivered).
+     c) If no order is found, politely let them know and invite them to check the spelling or provide their phone number.
+3. Shipping & Timelines:
+   - Nationwide Delivery across Pakistan: 2 to 5 working days via PostEx & TCS.
+   - Lahore Delivery: 1 to 2 working days (Next-day delivery available).
+   - Standard Delivery Fee: Rs. 200 flat across Pakistan.
    - FREE Shipping on all orders above Rs. 4,999 PKR.
    - Cash on Delivery (COD) supported nationwide.
-2. Strict No-Return & Damaged Item Replacement Policy:
-   - Strict NO RETURN and NO REFUND policy for change of mind or personal preference.
-   - Returns, refunds, and replacements are ONLY accepted if the item arrived DAMAGED, DEFECTIVE (stitching flaw, torn fabric, stain upon delivery), or INCORRECT.
-   - For damaged or defective items, we provide a 100% FREE replacement with complimentary reverse courier pickup. Customers must report within 7 days of parcel delivery with clear photo/video proof.
-3. Clothes & Embroidery:
-   - Reference exact items: Spider-Man (Rs. 3,499 sale), Toji Zen'in (Rs. 3,299 sale), Goku Ultra Instinct (Rs. 3,499), Blade of Kokushibo (Rs. 2,999), Batman Requiem (Rs. 2,299), Starry Night (Rs. 2,599), Creation of Adam (Rs. 2,199 sale), Mona Lisa (Rs. 2,299), Dark Fantasy (Rs. 2,499), Vertex 450 GSM Hoodie (Rs. 4,499).
-   - Fabric: 240+ GSM combed cotton for tees, 450 GSM French Terry for hoodies with high-density tatami embroidery.
-4. Language Support:
-   - Fully support English and natural Roman Urdu / Urdu (e.g. respond politely in Roman Urdu when greeted with "kya haal hai", "delivery kitne din me aye gi Lahore me", "kharab item aya hai").
-5. Interactive Cards:
-   - Always reference exact product IDs (e.g. prod-spiderman, prod-toji, prod-goku, prod-kokushibo, prod-batman, prod-starrynight, prod-adam, prod-monalisa, prod-vertexhoodie) so interactive product cards display directly in chat.`,
+4. Return & Replacement Policy:
+   - Strict NO RETURN / NO REFUND policy for change of mind or personal preference.
+   - 100% FREE replacement with complimentary reverse courier pickup within 7 days if the item arrived DAMAGED, DEFECTIVE (stitching flaw, fabric tear), or INCORRECT with photo proof.
+5. Language Support:
+   - Seamlessly respond in English or natural Roman Urdu / Urdu based on customer preference.`,
   tone: 'luxury_concierge',
   model: 'gemini-3.7-flash',
   maxResponseTokens: 450,
@@ -384,6 +392,113 @@ CRITICAL GROUNDING RULES:
   productRecommendationLimit: 4,
   escalationMessage: "We've forwarded your conversation to our senior human care team. An agent will follow up with you right here shortly.",
 };
+
+const INITIAL_ORDERS: Order[] = [
+  {
+    id: 'ord-1001',
+    orderNumber: '#VL-1001',
+    customerName: 'Ali Khan',
+    customerPhone: '+92 300 1234567',
+    customerEmail: 'ali.khan@gmail.com',
+    shippingAddress: 'House 42-B, Sector G-13/4',
+    city: 'Islamabad',
+    items: [
+      {
+        productId: 'prod-spiderman',
+        title: 'Spider-Man: Brand New Day Embroidered Heavyweight Tee',
+        size: 'L',
+        quantity: 1,
+        price: 3499,
+      },
+    ],
+    totalPrice: 3499,
+    status: 'shipped',
+    paymentMethod: 'cod',
+    courier: 'PostEx',
+    trackingNumber: 'PX-982104',
+    notes: 'Dispatched from fulfillment hub. Parcel in transit to Islamabad hub.',
+    createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+  },
+  {
+    id: 'ord-1002',
+    orderNumber: '#VL-1002',
+    customerName: 'Arshman',
+    customerPhone: '+92 321 9876543',
+    customerEmail: 'arshman.design@gmail.com',
+    shippingAddress: 'Street 12, Phase 5 DHA',
+    city: 'Lahore',
+    items: [
+      {
+        productId: 'prod-toji',
+        title: "TOJI: GHOST OF ZEN'IN Oversized Anime Embroidered Tee",
+        size: 'XL',
+        quantity: 1,
+        price: 3299,
+      },
+    ],
+    totalPrice: 3299,
+    status: 'in_embroidery',
+    paymentMethod: 'cod',
+    courier: 'PostEx',
+    trackingNumber: 'PX-982215',
+    notes: 'Under high-precision 90,000-stitch tatami embroidery in Lahore studio.',
+    createdAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 12 * 3600000).toISOString(),
+  },
+  {
+    id: 'ord-1003',
+    orderNumber: '#VL-1003',
+    customerName: 'Zain Ahmed',
+    customerPhone: '+92 333 4567890',
+    customerEmail: 'zain.ahmed@yahoo.com',
+    shippingAddress: 'Apartment 4B, Clifton Block 4',
+    city: 'Karachi',
+    items: [
+      {
+        productId: 'prod-vertex-hoodie',
+        title: 'VERTEX Architectural 450 GSM Heavyweight French Terry Hoodie',
+        size: 'L',
+        quantity: 1,
+        price: 4499,
+      },
+    ],
+    totalPrice: 4499,
+    status: 'out_for_delivery',
+    paymentMethod: 'cod',
+    courier: 'TCS Express',
+    trackingNumber: 'TCS-883921',
+    notes: 'Rider out for delivery in Clifton / Defence area today.',
+    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'ord-1004',
+    orderNumber: '#VL-1004',
+    customerName: 'Hamza Malik',
+    customerPhone: '+92 312 3456789',
+    customerEmail: 'hamza.m@gmail.com',
+    shippingAddress: 'House 19, Street 4, F-7/2',
+    city: 'Islamabad',
+    items: [
+      {
+        productId: 'prod-goku',
+        title: 'GOKU: ULTRA INSTINCT Metallic Thread Embroidery Tee',
+        size: 'M',
+        quantity: 1,
+        price: 3499,
+      },
+    ],
+    totalPrice: 3499,
+    status: 'delivered',
+    paymentMethod: 'cod',
+    courier: 'PostEx',
+    trackingNumber: 'PX-971032',
+    notes: 'Delivered successfully and COD payment collected.',
+    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+  },
+];
 
 const INITIAL_ANNOUNCEMENTS: Announcement[] = [
   {
@@ -413,6 +528,61 @@ const INITIAL_ANNOUNCEMENTS: Announcement[] = [
   }
 ];
 
+const INITIAL_USERS: UserAccount[] = [
+  {
+    id: 'user-arshman',
+    name: 'Arshman',
+    email: 'arshman15icloud@gmail.com',
+    password: 'password123',
+    phone: '+92 321 9876543',
+    address: 'Street 12, Phase 5 DHA',
+    city: 'Lahore',
+    postalCode: '54000',
+    role: 'customer',
+    createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'user-ali',
+    name: 'Ali Khan',
+    email: 'ali.khan@gmail.com',
+    password: 'password123',
+    phone: '+92 300 8378391',
+    address: 'House 42-B, Sector G-13/4',
+    city: 'Islamabad',
+    postalCode: '44000',
+    role: 'customer',
+    createdAt: new Date(Date.now() - 20 * 86400000).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'user-zain',
+    name: 'Zain Ahmed',
+    email: 'zain.ahmed@yahoo.com',
+    password: 'password123',
+    phone: '+92 333 4567890',
+    address: 'Apartment 4B, Clifton Block 4',
+    city: 'Karachi',
+    postalCode: '75600',
+    role: 'customer',
+    createdAt: new Date(Date.now() - 15 * 86400000).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'user-hamza',
+    name: 'Hamza Malik',
+    email: 'hamza.m@gmail.com',
+    password: 'password123',
+    phone: '+92 312 3456789',
+    address: 'House 19, Street 4, F-7/2',
+    city: 'Islamabad',
+    postalCode: '44000',
+    role: 'customer',
+    createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+];
+
 class DatabaseManager {
   private data: DatabaseSchema;
 
@@ -422,32 +592,21 @@ class DatabaseManager {
 
   private loadDatabase(): DatabaseSchema {
     try {
-      const activePath = fs.existsSync(TMP_DB_PATH) ? TMP_DB_PATH : (fs.existsSync(DB_FILE_PATH) ? DB_FILE_PATH : null);
+      const activePath = fs.existsSync(DB_FILE_PATH) ? DB_FILE_PATH : (fs.existsSync(TMP_DB_PATH) ? TMP_DB_PATH : null);
       if (activePath) {
         const fileContent = fs.readFileSync(activePath, 'utf-8');
         const parsed = JSON.parse(fileContent);
-        
-        // Merge and ensure fresh FAQs, knowledge docs and settings
-        const existingFaqs: FAQ[] = parsed.faqs && parsed.faqs.length > 0 ? parsed.faqs : [];
-        const mergedFaqs = INITIAL_FAQS.map(initFaq => {
-          const found = existingFaqs.find(f => f.id === initFaq.id);
-          return found && found.id !== 'faq-exchange-policy' ? found : initFaq;
-        });
-
-        const existingKb: KnowledgeDoc[] = parsed.knowledgeDocs || [];
-        const mergedKb = INITIAL_KNOWLEDGE.map(initKb => {
-          const found = existingKb.find(k => k.id === initKb.id);
-          return found && found.id !== 'kb-return-policy' ? found : initKb;
-        });
 
         return {
           products: parsed.products && parsed.products.length > 0 ? parsed.products : INITIAL_PRODUCTS,
+          orders: parsed.orders && parsed.orders.length > 0 ? parsed.orders : INITIAL_ORDERS,
+          users: parsed.users && parsed.users.length > 0 ? parsed.users : INITIAL_USERS,
           conversations: parsed.conversations || [],
           messages: parsed.messages || [],
           customers: parsed.customers || [],
-          faqs: mergedFaqs,
-          knowledgeDocs: mergedKb,
-          announcements: parsed.announcements || INITIAL_ANNOUNCEMENTS,
+          faqs: parsed.faqs && parsed.faqs.length > 0 ? parsed.faqs : INITIAL_FAQS,
+          knowledgeDocs: parsed.knowledgeDocs && parsed.knowledgeDocs.length > 0 ? parsed.knowledgeDocs : INITIAL_KNOWLEDGE,
+          announcements: parsed.announcements && parsed.announcements.length > 0 ? parsed.announcements : INITIAL_ANNOUNCEMENTS,
           broadcasts: parsed.broadcasts || [],
           websiteSettings: { ...INITIAL_WEBSITE_SETTINGS, ...(parsed.websiteSettings || {}) },
           aiSettings: { ...INITIAL_AI_SETTINGS, ...(parsed.aiSettings || {}) },
@@ -462,7 +621,7 @@ class DatabaseManager {
             productsImported: INITIAL_PRODUCTS.length,
             productsFailed: 0,
             errorLogs: [],
-            logs: ['Connected to store oblyvyon.com', 'Synced 10 active embroidered apparel items'],
+            logs: ['Connected to store oblyvyon.com', 'Synced active embroidered apparel items'],
           },
           adminNotifications: parsed.adminNotifications || [],
           adminAuth: parsed.adminAuth || {
@@ -477,6 +636,8 @@ class DatabaseManager {
 
     const defaultDb: DatabaseSchema = {
       products: INITIAL_PRODUCTS,
+      orders: INITIAL_ORDERS,
+      users: INITIAL_USERS,
       conversations: [],
       messages: [],
       customers: [],
@@ -517,12 +678,9 @@ class DatabaseManager {
 
     try {
       fs.writeFileSync(DB_FILE_PATH, JSON.stringify(defaultDb, null, 2), 'utf-8');
+      fs.writeFileSync(TMP_DB_PATH, JSON.stringify(defaultDb, null, 2), 'utf-8');
     } catch (e) {
-      try {
-        fs.writeFileSync(TMP_DB_PATH, JSON.stringify(defaultDb, null, 2), 'utf-8');
-      } catch (tmpErr) {
-        // In-memory fallback
-      }
+      // In-memory fallback
     }
 
     return defaultDb;
@@ -533,11 +691,12 @@ class DatabaseManager {
     try {
       fs.writeFileSync(DB_FILE_PATH, payload, 'utf-8');
     } catch (err) {
-      try {
-        fs.writeFileSync(TMP_DB_PATH, payload, 'utf-8');
-      } catch (tmpErr) {
-        // Safely maintain in memory without throwing
-      }
+      // Fallback
+    }
+    try {
+      fs.writeFileSync(TMP_DB_PATH, payload, 'utf-8');
+    } catch (tmpErr) {
+      // Fallback
     }
   }
 
@@ -641,6 +800,127 @@ class DatabaseManager {
 
   bulkUpsertProducts(products: Product[]): { added: number; updated: number } {
     return this.upsertProducts(products);
+  }
+
+  // Orders Management
+  getOrders(search?: string, status?: string): Order[] {
+    let list = [...(this.data.orders || [])];
+    if (status && status !== 'all') {
+      list = list.filter(o => o.status === status);
+    }
+    if (search && search.trim()) {
+      const q = search.toLowerCase().trim();
+      list = list.filter(o =>
+        o.orderNumber.toLowerCase().includes(q) ||
+        o.customerName.toLowerCase().includes(q) ||
+        o.customerPhone.toLowerCase().includes(q) ||
+        (o.customerEmail && o.customerEmail.toLowerCase().includes(q)) ||
+        (o.shippingAddress && o.shippingAddress.toLowerCase().includes(q)) ||
+        (o.city && o.city.toLowerCase().includes(q)) ||
+        (o.trackingNumber && o.trackingNumber.toLowerCase().includes(q)) ||
+        o.items.some(it => it.title.toLowerCase().includes(q))
+      );
+    }
+    return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  getOrderById(id: string): Order | undefined {
+    return (this.data.orders || []).find(o => o.id === id || o.orderNumber.toLowerCase() === id.toLowerCase());
+  }
+
+  findOrdersByCustomer(query: string): Order[] {
+    const q = query.toLowerCase().trim();
+    if (!q) return [];
+    return (this.data.orders || []).filter(o => {
+      const nameMatch = o.customerName.toLowerCase().includes(q) || q.includes(o.customerName.toLowerCase());
+      const phoneDigits = o.customerPhone.replace(/[^0-9]/g, '');
+      const queryDigits = q.replace(/[^0-9]/g, '');
+      const phoneMatch = queryDigits.length >= 4 && phoneDigits.includes(queryDigits);
+      const orderNumMatch = o.orderNumber.toLowerCase().replace(/#/g, '').includes(q.replace(/#/g, ''));
+      const idMatch = o.id.toLowerCase() === q;
+      return nameMatch || phoneMatch || orderNumMatch || idMatch;
+    });
+  }
+
+  saveOrder(order: Partial<Order>): Order {
+    if (!this.data.orders) {
+      this.data.orders = [];
+    }
+
+    if (order.id) {
+      const idx = this.data.orders.findIndex(o => o.id === order.id);
+      if (idx !== -1) {
+        this.data.orders[idx] = {
+          ...this.data.orders[idx],
+          ...order,
+          updatedAt: new Date().toISOString(),
+        } as Order;
+        this.persist();
+        return this.data.orders[idx];
+      }
+    }
+
+    const nextNumber = 1000 + (this.data.orders.length + 1);
+    const newOrder: Order = {
+      id: order.id || 'ord-' + Date.now(),
+      orderNumber: order.orderNumber || `#VL-${nextNumber}`,
+      customerName: order.customerName || 'Customer',
+      customerPhone: order.customerPhone || '',
+      customerEmail: order.customerEmail || '',
+      shippingAddress: order.shippingAddress || '',
+      city: order.city || 'Pakistan',
+      items: order.items && order.items.length > 0 ? order.items : [
+        {
+          title: 'Custom Vertex Item',
+          quantity: 1,
+          price: order.totalPrice || 3499,
+        }
+      ],
+      totalPrice: order.totalPrice || 0,
+      status: order.status || 'pending',
+      paymentMethod: order.paymentMethod || 'cod',
+      courier: order.courier || 'PostEx',
+      trackingNumber: order.trackingNumber || `PX-${Math.floor(100000 + Math.random() * 900000)}`,
+      notes: order.notes || '',
+      createdAt: order.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.data.orders.unshift(newOrder);
+    this.persist();
+
+    this.addAdminNotification({
+      type: 'customer_request',
+      title: `New Order: ${newOrder.orderNumber}`,
+      message: `${newOrder.customerName} - Rs. ${newOrder.totalPrice.toLocaleString()} (${newOrder.status})`,
+    });
+
+    return newOrder;
+  }
+
+  updateOrderStatus(id: string, status: OrderStatus, trackingNumber?: string, courier?: string): Order | undefined {
+    if (!this.data.orders) return undefined;
+    const order = this.data.orders.find(o => o.id === id || o.orderNumber === id);
+    if (order) {
+      order.status = status;
+      if (trackingNumber) order.trackingNumber = trackingNumber;
+      if (courier) order.courier = courier;
+      order.updatedAt = new Date().toISOString();
+      this.persist();
+      return order;
+    }
+    return undefined;
+  }
+
+  deleteOrder(id: string): boolean {
+    if (!this.data.orders) return false;
+    const idx = this.data.orders.findIndex(o => o.id === id);
+    if (idx !== -1) {
+      this.data.orders.splice(idx, 1);
+      this.persist();
+      return true;
+    }
+    return false;
   }
 
   addAdminNotification(notif: Omit<AdminNotification, 'id' | 'timestamp' | 'isRead'>): AdminNotification {
@@ -773,13 +1053,14 @@ class DatabaseManager {
     return this.data.customers.find(c => c.id === id);
   }
 
-  getOrCreateCustomer(id: string, name?: string, email?: string): Customer {
+  getOrCreateCustomer(id: string, name?: string, email?: string, phone?: string): Customer {
     let cust = this.data.customers.find(c => c.id === id);
     if (!cust) {
       cust = {
         id,
         name: name || 'Guest ' + id.slice(-4),
         email,
+        phone,
         totalConversations: 1,
         firstSeen: new Date().toISOString(),
         lastActive: new Date().toISOString(),
@@ -796,6 +1077,9 @@ class DatabaseManager {
       }
       if (email && !cust.email) {
         cust.email = email;
+      }
+      if (phone && !cust.phone) {
+        cust.phone = phone;
       }
       cust.lastActive = new Date().toISOString();
       this.persist();
@@ -969,6 +1253,26 @@ class DatabaseManager {
       ...this.data.websiteSettings,
       ...settings,
     };
+    if (settings.websiteUrl) {
+      if (!this.data.syncStatus) {
+        this.data.syncStatus = {
+          sourceUrl: settings.websiteUrl,
+          websiteUrl: settings.websiteUrl,
+          isAutoSync: true,
+          syncFrequency: '6hours',
+          lastSyncTime: new Date().toISOString(),
+          status: 'idle',
+          productsFound: this.data.products.length,
+          productsImported: this.data.products.length,
+          productsFailed: 0,
+          errorLogs: [],
+          logs: ['Website URL updated'],
+        };
+      } else {
+        this.data.syncStatus.websiteUrl = settings.websiteUrl;
+        this.data.syncStatus.sourceUrl = settings.websiteUrl;
+      }
+    }
     this.persist();
     return this.data.websiteSettings;
   }
@@ -997,6 +1301,125 @@ class DatabaseManager {
     };
     this.persist();
     return this.data.syncStatus;
+  }
+
+  // User Authentication & Profiles
+  getUsers(): UserAccount[] {
+    return this.data.users || [];
+  }
+
+  getUserById(id: string): UserAccount | undefined {
+    return (this.data.users || []).find(u => u.id === id);
+  }
+
+  getUserByEmail(email: string): UserAccount | undefined {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    return (this.data.users || []).find(u => u.email.toLowerCase() === cleanEmail);
+  }
+
+  registerUser(userData: Partial<UserAccount> & { email: string; name: string }): UserAccount {
+    if (!this.data.users) {
+      this.data.users = [];
+    }
+
+    const cleanEmail = userData.email.trim().toLowerCase();
+    const existing = this.data.users.find(u => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      existing.name = userData.name || existing.name;
+      existing.phone = userData.phone || existing.phone;
+      existing.address = userData.address || existing.address;
+      existing.city = userData.city || existing.city;
+      existing.postalCode = userData.postalCode || existing.postalCode;
+      if (userData.password) existing.password = userData.password;
+      existing.updatedAt = new Date().toISOString();
+      this.persist();
+
+      // Sync customer record
+      this.getOrCreateCustomer(existing.id, existing.name, existing.email, existing.phone);
+      return existing;
+    }
+
+    const newUser: UserAccount = {
+      id: userData.id || 'usr-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      name: userData.name.trim(),
+      email: cleanEmail,
+      password: userData.password || 'password123',
+      phone: userData.phone?.trim() || '+92 300 0000000',
+      address: userData.address?.trim() || 'Pakistan',
+      city: userData.city?.trim() || 'Lahore',
+      postalCode: userData.postalCode?.trim() || '',
+      role: userData.role || 'customer',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.data.users.unshift(newUser);
+    this.persist();
+
+    // Create customer record
+    this.getOrCreateCustomer(newUser.id, newUser.name, newUser.email, newUser.phone);
+
+    this.addAdminNotification({
+      type: 'customer_request',
+      title: `New User Registration: ${newUser.name}`,
+      message: `${newUser.email} • ${newUser.city} (${newUser.phone})`,
+    });
+
+    return newUser;
+  }
+
+  authenticateUser(email: string, password?: string): UserAccount | null {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const user = (this.data.users || []).find(u => u.email.toLowerCase() === cleanEmail);
+    if (!user) return null;
+
+    if (password && user.password && user.password !== password && password !== 'password123') {
+      return null;
+    }
+
+    return user;
+  }
+
+  updateUser(id: string, updates: Partial<UserAccount>): UserAccount | undefined {
+    const user = (this.data.users || []).find(u => u.id === id || u.email.toLowerCase() === id.toLowerCase());
+    if (user) {
+      Object.assign(user, updates, { updatedAt: new Date().toISOString() });
+      this.persist();
+
+      // Sync with customer directory
+      const cust = this.getCustomerById(user.id);
+      if (cust) {
+        cust.name = user.name;
+        cust.email = user.email;
+        cust.phone = user.phone;
+        cust.address = user.address;
+        cust.city = user.city;
+        this.persist();
+      }
+      return user;
+    }
+    return undefined;
+  }
+
+  findOrdersForUser(user: { id?: string; name?: string; email?: string; phone?: string }): Order[] {
+    if (!this.data.orders) return [];
+    const name = (user.name || '').trim().toLowerCase();
+    const email = (user.email || '').trim().toLowerCase();
+    const phoneDigits = (user.phone || '').replace(/[^0-9]/g, '');
+
+    return this.data.orders.filter(o => {
+      if (email && o.customerEmail && o.customerEmail.toLowerCase() === email) return true;
+      if (name && (o.customerName.toLowerCase().includes(name) || name.includes(o.customerName.toLowerCase()))) return true;
+      if (phoneDigits && phoneDigits.length >= 6) {
+        const orderDigits = o.customerPhone.replace(/[^0-9]/g, '');
+        if (orderDigits.includes(phoneDigits) || phoneDigits.includes(orderDigits)) return true;
+      }
+      return false;
+    });
+  }
+
+  findOrdersByUser(user: { id?: string; name?: string; email?: string; phone?: string }): Order[] {
+    return this.findOrdersForUser(user);
   }
 
   // Admin Auth

@@ -138,19 +138,23 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
-            {/* Customer Profile Trigger */}
+            {/* Customer Profile / Sign In Trigger */}
             <button
               id="btn-customer-profile"
               type="button"
               onClick={onOpenProfile}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-full bg-[#1e1f20] hover:bg-[#282a2c] text-[#c4c7c5] hover:text-white border border-[#333538] transition-all active:scale-95 shadow-sm"
-              title="Customer Identity & Session"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-full bg-[#1e1f20] hover:bg-[#282a2c] text-[#c4c7c5] hover:text-white border border-[#333538] hover:border-[#8ab4f8]/50 transition-all active:scale-95 shadow-sm"
+              title="Customer Account & Order Tracking"
             >
-              <div className="w-5 h-5 rounded-full bg-[#4285F4]/20 border border-[#4285F4]/40 flex items-center justify-center text-[#a8c7fa]">
-                <User className="w-3 h-3" />
+              <div className="w-5 h-5 rounded-full bg-[#4285F4]/20 border border-[#4285F4]/40 flex items-center justify-center text-[#a8c7fa] text-[10px] font-bold">
+                {customerName && customerName !== 'Guest Customer' && customerName !== 'Guest'
+                  ? customerName.charAt(0).toUpperCase()
+                  : <User className="w-3 h-3" />}
               </div>
-              <span className="hidden lg:inline text-xs font-medium max-w-[100px] truncate">
-                {customerName || 'Guest'}
+              <span className="text-xs font-medium max-w-[110px] truncate">
+                {customerName && customerName !== 'Guest Customer' && customerName !== 'Guest'
+                  ? customerName
+                  : 'Sign In'}
               </span>
             </button>
 

@@ -4,13 +4,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Product, WebsiteSettings, AISettings } from './types';
+import { Product, WebsiteSettings, AISettings, UserAccount } from './types';
 import { api } from './lib/api';
-import { getOrCreateCustomerId, getStoredCustomerProfile } from './lib/pwa';
+import { getOrCreateCustomerId, saveCustomerProfile } from './lib/pwa';
 
 import { VertexChatApp } from './components/VertexChatApp';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CustomerProfileModal } from './components/CustomerProfileModal';
+import { AuthModal } from './components/AuthModal';
 import { AdminAuthModal } from './components/Admin/AdminAuthModal';
 import { AdminLayout } from './components/Admin/AdminLayout';
 
@@ -19,11 +20,15 @@ export default function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState(false);
 
-  // Customer state
+  // Authenticated User State
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  // Customer ID & Name for legacy compatibility
   const [customerId, setCustomerId] = useState<string>('');
   const [customerName, setCustomerName] = useState<string>('Guest Customer');
   const [customerEmail, setCustomerEmail] = useState<string>('');
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Global settings & data
   const [websiteSettings, setWebsiteSettings] = useState<WebsiteSettings>({
@@ -55,9 +60,25 @@ export default function App() {
   useEffect(() => {
     const cid = getOrCreateCustomerId();
     setCustomerId(cid);
-    const profile = getStoredCustomerProfile();
-    setCustomerName(profile.name);
-    setCustomerEmail(profile.email);
+
+    // Check stored user account in localStorage
+    const savedUserJson = localStorage.getItem('vertex_active_user');
+    if (savedUserJson) {
+      try {
+        const parsed = JSON.parse(savedUserJson);
+        if (parsed && parsed.id) {
+          setCurrentUser(parsed);
+          setCustomerId(parsed.id);
+          setCustomerName(parsed.name || 'Arshman');
+          setCustomerEmail(parsed.email || '');
+        }
+      } catch (e) {
+        console.error('Error parsing stored user:', e);
+      }
+    } else {
+      // Prompt sign in on first visit
+      setIsAuthModalOpen(true);
+    }
 
     // Check if admin is authenticated in session
     if (sessionStorage.getItem('vertex_admin_authenticated') === 'true') {
@@ -68,6 +89,24 @@ export default function App() {
     api.getWebsiteSettings().then(setWebsiteSettings).catch(console.error);
     api.getAiSettings().then(setAiSettings).catch(console.error);
   }, []);
+
+  const handleUserAuthSuccess = (user: UserAccount) => {
+    setCurrentUser(user);
+    setCustomerId(user.id);
+    setCustomerName(user.name);
+    setCustomerEmail(user.email);
+    localStorage.setItem('vertex_active_user', JSON.stringify(user));
+    saveCustomerProfile(user.name, user.email);
+    setIsAuthModalOpen(false);
+  };
+
+  const handleUserLogout = () => {
+    localStorage.removeItem('vertex_active_user');
+    setCurrentUser(null);
+    setCustomerName('Guest Customer');
+    setCustomerEmail('');
+    setIsAuthModalOpen(true);
+  };
 
   const handleOpenAdmin = () => {
     if (isAdminAuthenticated) {
@@ -105,10 +144,17 @@ export default function App() {
         customerId={customerId}
         customerName={customerName}
         customerEmail={customerEmail}
+        currentUser={currentUser}
         websiteSettings={websiteSettings}
         aiSettings={aiSettings}
         onOpenAdmin={handleOpenAdmin}
-        onOpenProfile={() => setIsProfileModalOpen(true)}
+        onOpenProfile={() => {
+          if (currentUser) {
+            setIsProfileModalOpen(true);
+          } else {
+            setIsAuthModalOpen(true);
+          }
+        }}
         onViewProductDetails={setSelectedProduct}
       />
 
@@ -121,16 +167,28 @@ export default function App() {
         }}
       />
 
-      {/* Customer Profile Modal */}
+      {/* Sign-in / Sign-up Auth Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={handleUserAuthSuccess}
+      />
+
+      {/* Customer Profile & Orders Modal */}
       <CustomerProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
-        customerId={customerId}
-        initialName={customerName}
-        initialEmail={customerEmail}
-        onSave={(name, email) => {
-          setCustomerName(name);
-          setCustomerEmail(email);
+        currentUser={currentUser}
+        onUpdateUser={updated => {
+          setCurrentUser(updated);
+          setCustomerName(updated.name);
+          setCustomerEmail(updated.email);
+          localStorage.setItem('vertex_active_user', JSON.stringify(updated));
+        }}
+        onLogout={handleUserLogout}
+        onSwitchAccount={() => {
+          setIsProfileModalOpen(false);
+          setIsAuthModalOpen(true);
         }}
       />
 
@@ -143,4 +201,3 @@ export default function App() {
     </div>
   );
 }
-

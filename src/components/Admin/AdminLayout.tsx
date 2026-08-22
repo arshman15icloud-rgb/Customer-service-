@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   LayoutDashboard,
   MessageSquare,
+  Package,
   ShoppingBag,
   RefreshCw,
   HelpCircle,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import { AdminDashboard } from './AdminDashboard';
 import { AdminInbox } from './AdminInbox';
+import { AdminOrders } from './AdminOrders';
 import { AdminProducts } from './AdminProducts';
 import { AdminProductSync } from './AdminProductSync';
 import { AdminFaqs } from './AdminFaqs';
@@ -39,6 +41,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onBackToStore, onLogou
 
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard & Stats', icon: LayoutDashboard },
+    { id: 'orders', label: 'Orders & Tracking', icon: Package, badge: 'New' },
     { id: 'inbox', label: 'Live Inbox & Escalations', icon: MessageSquare, badge: 'Live' },
     { id: 'products', label: 'Product Inventory', icon: ShoppingBag },
     { id: 'sync', label: 'Website Product Sync', icon: RefreshCw },
@@ -156,6 +159,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ onBackToStore, onLogou
         {/* Dynamic Section Render */}
         <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
           {activeNav === 'dashboard' && <AdminDashboard onNavigate={setActiveNav} />}
+          {activeNav === 'orders' && <AdminOrders />}
           {activeNav === 'inbox' && <AdminInbox />}
           {activeNav === 'products' && <AdminProducts />}
           {activeNav === 'sync' && <AdminProductSync />}

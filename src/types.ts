@@ -50,11 +50,28 @@ export interface Conversation {
   createdAt: string;
 }
 
+export interface UserAccount {
+  id: string;
+  name: string;
+  email: string;
+  password?: string;
+  phone: string;
+  address: string;
+  city: string;
+  postalCode?: string;
+  avatarUrl?: string;
+  role: 'customer' | 'admin';
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
   email?: string;
   phone?: string;
+  address?: string;
+  city?: string;
   firstSeen?: string;
   lastActive?: string;
   totalConversations?: number;
@@ -175,6 +192,42 @@ export interface AdminNotification {
   conversationId?: string;
   timestamp: string;
   isRead: boolean;
+}
+
+export type OrderStatus =
+  | 'pending'
+  | 'processing'
+  | 'in_embroidery'
+  | 'shipped'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'cancelled';
+
+export interface OrderItem {
+  productId?: string;
+  title: string;
+  size?: string;
+  quantity: number;
+  price: number;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  shippingAddress: string;
+  city?: string;
+  items: OrderItem[];
+  totalPrice: number;
+  status: OrderStatus;
+  paymentMethod?: 'cod' | 'card' | 'bank_transfer' | string;
+  courier?: string;
+  trackingNumber?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AnalyticsData {
