@@ -12,7 +12,7 @@ import {
   SyncStatus,
   AdminNotification,
   AnalyticsData,
-} from '../types.js';
+} from '../types';
 
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {

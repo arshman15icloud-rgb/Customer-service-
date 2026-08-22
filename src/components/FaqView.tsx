@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FAQ } from '../types.js';
-import { api } from '../lib/api.js';
-import { VertexSparkleIcon } from './VertexSparkleIcon.js';
+import { FAQ } from '../types';
+import { api } from '../lib/api';
+import { VertexSparkleIcon } from './VertexSparkleIcon';
 import {
   HelpCircle,
   ChevronDown,

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Message, Conversation, Product, WebsiteSettings, AISettings } from '../types.js';
-import { api } from '../lib/api.js';
-import { ProductCard } from './ProductCard.js';
-import { VertexSparkleIcon } from './VertexSparkleIcon.js';
+import { Message, Conversation, Product, WebsiteSettings, AISettings } from '../types';
+import { api } from '../lib/api';
+import { ProductCard } from './ProductCard';
+import { VertexSparkleIcon } from './VertexSparkleIcon';
 import {
   Send,
   Sparkles,

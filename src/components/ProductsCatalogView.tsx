@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Product } from '../types.js';
-import { api } from '../lib/api.js';
-import { ProductCard } from './ProductCard.js';
+import { Product } from '../types';
+import { api } from '../lib/api';
+import { ProductCard } from './ProductCard';
 import { Search, Filter, Sparkles, RefreshCw, ShoppingBag, SlidersHorizontal } from 'lucide-react';
 
 interface ProductsCatalogViewProps {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Product } from '../types.js';
+import { Product } from '../types';
 import { X, ShoppingBag, Sparkles, Check, ShieldCheck, Truck, RotateCcw, ExternalLink } from 'lucide-react';
 
 interface ProductDetailModalProps {

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Product } from '../types.js';
+import { Product } from '../types';
 import { ExternalLink, ShoppingBag, Eye, Check, Flame } from 'lucide-react';
-import { VertexSparkleIcon } from './VertexSparkleIcon.js';
+import { VertexSparkleIcon } from './VertexSparkleIcon';
 
 interface ProductCardProps {
   product: Product;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { WebsiteSettings } from '../../types.js';
-import { api } from '../../lib/api.js';
+import { WebsiteSettings } from '../../types';
+import { api } from '../../lib/api';
 import { Globe, Save, CheckCircle, Store, Phone, Mail, Clock } from 'lucide-react';
 
 export const AdminWebsiteSettings: React.FC = () => {

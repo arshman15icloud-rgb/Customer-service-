@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Announcement } from '../types.js';
-import { api } from '../lib/api.js';
-import { VertexSparkleIcon } from './VertexSparkleIcon.js';
+import { Announcement } from '../types';
+import { api } from '../lib/api';
+import { VertexSparkleIcon } from './VertexSparkleIcon';
 import { Megaphone, Calendar, Tag, ExternalLink, Flame } from 'lucide-react';
 
 interface AnnouncementsViewProps {

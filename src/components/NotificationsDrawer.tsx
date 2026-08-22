@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Bell, Check, Sparkles, AlertCircle, Send, ExternalLink } from 'lucide-react';
-import { requestWebPushPermission } from '../lib/pwa.js';
-import { api } from '../lib/api.js';
-import { BroadcastNotification } from '../types.js';
+import { requestWebPushPermission } from '../lib/pwa';
+import { api } from '../lib/api';
+import { BroadcastNotification } from '../types';
 
 interface NotificationsDrawerProps {
   isOpen: boolean;

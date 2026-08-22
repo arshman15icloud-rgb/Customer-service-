@@ -1,7 +1,7 @@
 import React from 'react';
 import { HelpCircle, Bell, Download, Shield, MessageSquare, Megaphone, User, Sparkles, ChevronDown } from 'lucide-react';
-import { WebsiteSettings } from '../types.js';
-import { VertexSparkleIcon } from './VertexSparkleIcon.js';
+import { WebsiteSettings } from '../types';
+import { VertexSparkleIcon } from './VertexSparkleIcon';
 
 interface HeaderProps {
   activeTab: 'chat' | 'faqs' | 'announcements';

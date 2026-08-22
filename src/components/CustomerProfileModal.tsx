@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, User, Mail, Check, Shield } from 'lucide-react';
-import { saveCustomerProfile } from '../lib/pwa.js';
+import { saveCustomerProfile } from '../lib/pwa';
 
 interface CustomerProfileModalProps {
   isOpen: boolean;

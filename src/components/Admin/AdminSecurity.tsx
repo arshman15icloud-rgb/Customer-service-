@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api } from '../../lib/api.js';
+import { api } from '../../lib/api';
 import { Lock, ShieldCheck, CheckCircle, AlertCircle, Key } from 'lucide-react';
 
 export const AdminSecurity: React.FC = () => {
