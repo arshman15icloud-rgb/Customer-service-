@@ -23,7 +23,9 @@ import {
   MessageSquare,
   Shield,
   Check,
-  X
+  X,
+  Sparkles,
+  HeartHandshake
 } from 'lucide-react';
 
 interface VertexChatAppProps {
@@ -52,7 +54,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  
+
   // Left Sidebar state
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [conversationsList, setConversationsList] = useState<Conversation[]>([]);
@@ -67,39 +69,41 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Curated prompts
+  // Curated suggestion prompts
   const suggestionPrompts = [
     {
       icon: Shirt,
-      title: 'Anime Drops & Sizes',
-      desc: 'Spider-Man, Toji & Goku 280 GSM oversized tees',
+      title: 'Anime Drops & Fabric Specs',
+      desc: 'Spider-Man, Toji & Sukuna 240–280 GSM heavyweight streetwear',
       prompt: 'Show me your latest anime streetwear drops, available sizes, and fabric GSM specifications.',
     },
     {
-      icon: Truck,
-      title: 'Delivery in Pakistan',
-      desc: 'Lahore (1-2 days), Karachi & nationwide (2-5 days)',
-      prompt: 'What are the delivery times and shipping rates across Pakistan? Is Cash on Delivery (COD) available?',
-    },
-    {
-      icon: ShieldAlert,
-      title: 'Damaged Item Replacement',
-      desc: '100% Free reverse pickup & brand new replacement',
-      prompt: 'What is your policy if my order arrives defective or damaged? How do I get a free replacement?',
-    },
-    {
       icon: Layers,
-      title: 'Tatami Embroidery Care',
-      desc: '85,000+ stitches & safe washing instructions',
-      prompt: 'How should I wash and care for Vertex Lab embroidered heavyweight garments?',
+      title: 'Japanese Tatami Embroidery',
+      desc: '85,000+ stitch count craftsmanship & garment care details',
+      prompt: 'Tell me about the Japanese Tatami embroidery details on Vertex Lab apparel and how to care for it.',
+    },
+    {
+      icon: HeartHandshake,
+      title: 'Brand Story & Lahore Studio',
+      desc: 'Independent design collective & Lab11 studio craftsmanship',
+      prompt: 'Who is the brand owner of Vertex Lab and what is the story behind your Lahore design studio?',
+    },
+    {
+      icon: Truck,
+      title: 'Pakistan Delivery & Free Shipping',
+      desc: 'Lahore (1-2 days), Nationwide (2-5 days) & 100% Free Replacement',
+      prompt: 'What are your delivery times across Pakistan, shipping charges, and damaged item replacement policy?',
     },
   ];
 
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    }, 50);
   };
 
-  // Load chat
+  // Load chat history
   const loadChat = async () => {
     try {
       const convs = await api.getConversations('all', customerId);
@@ -127,10 +131,12 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
   }, [customerId]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages.length, isTyping]);
 
-  // Voice recording setup using Web Speech API
+  // Voice recording setup
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -146,13 +152,8 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
           setIsRecording(false);
         };
 
-        recognition.onerror = () => {
-          setIsRecording(false);
-        };
-
-        recognition.onend = () => {
-          setIsRecording(false);
-        };
+        recognition.onerror = () => setIsRecording(false);
+        recognition.onend = () => setIsRecording(false);
 
         recognitionRef.current = recognition;
       }
@@ -205,18 +206,31 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
         email: customerEmail,
         conversationId: conversation?.id,
       });
-      setConversation(response.conversation);
-      
-      const updated = await api.getConversation(response.conversation.id);
-      setMessages(updated.messages);
-      
+
+      if (response && response.conversation) {
+        setConversation(response.conversation);
+      }
+
+      setMessages(prev => {
+        const withoutTemp = prev.filter(m => m.id !== tempUserMsg.id);
+        const newMessages = [...withoutTemp];
+        if (response.customerMessage) {
+          newMessages.push(response.customerMessage);
+        } else {
+          newMessages.push({ ...tempUserMsg, read: true });
+        }
+        if (response.aiMessage) {
+          newMessages.push(response.aiMessage);
+        }
+        return newMessages;
+      });
+
       api.getConversations('all', customerId).then(setConversationsList).catch(() => {});
     } catch (err) {
       console.error('Send error:', err);
     } finally {
       setIsLoading(false);
       setIsTyping(false);
-      textareaRef.current?.focus();
     }
   };
 
@@ -241,7 +255,9 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
     }
 
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    // Clean markdown for speech
+    const cleanText = text.replace(/[*_#`~]/g, '');
+    const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     utterance.onend = () => setSpeakingMessageId(null);
@@ -260,6 +276,29 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
 
   const firstName = customerName && customerName !== 'Guest Customer' ? customerName.split(' ')[0] : 'there';
 
+  // Helper for bold text and formatting
+  const renderTextWithMarkdown = (text: string) => {
+    const lines = text.split('\n');
+    return lines.map((line, lineIdx) => {
+      const parts = line.split(/(\*\*[^*]+\*\*)/g);
+      return (
+        <React.Fragment key={lineIdx}>
+          {parts.map((part, pIdx) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+              return (
+                <strong key={pIdx} className="font-semibold text-white">
+                  {part.slice(2, -2)}
+                </strong>
+              );
+            }
+            return <span key={pIdx}>{part}</span>;
+          })}
+          {lineIdx < lines.length - 1 && <br />}
+        </React.Fragment>
+      );
+    });
+  };
+
   return (
     <div className="flex h-screen w-full bg-[#131314] text-[#e3e3e3] font-sans antialiased overflow-hidden select-text">
       
@@ -270,7 +309,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
         }`}
       >
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-4">
+        <div className="flex items-center justify-between p-4 border-b border-[#282a2c]">
           <div className="flex items-center gap-2.5">
             <VertexSparkleIcon className="w-6 h-6" animated={true} />
             <span className="font-semibold text-base tracking-tight text-white font-display">
@@ -287,20 +326,20 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
         </div>
 
         {/* New Chat Button */}
-        <div className="px-3 py-2">
+        <div className="px-3 py-3">
           <button
             type="button"
             onClick={handleStartNewChat}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-full text-xs font-semibold bg-[#282a2c] hover:bg-[#333538] text-[#e3e3e3] border border-[#3c4043] transition-all shadow-sm active:scale-[0.98]"
+            className="flex items-center gap-3 w-full px-4 py-2.5 rounded-full text-xs font-semibold bg-[#282a2c] hover:bg-[#333538] text-[#e3e3e3] border border-[#3c4043] transition-all shadow-sm active:scale-[0.98]"
           >
             <Plus className="w-4 h-4 text-[#a8c7fa]" />
-            <span>New chat</span>
+            <span>New conversation</span>
           </button>
         </div>
 
         {/* Recent Conversations */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1 no-scrollbar">
-          <div className="text-[11px] font-semibold text-[#9aa0a6] uppercase tracking-wider px-3 mb-2">
+        <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1 no-scrollbar">
+          <div className="text-[10px] font-semibold text-[#9aa0a6] uppercase tracking-wider px-2 mb-2">
             Recent Conversations
           </div>
           {!Array.isArray(conversationsList) || conversationsList.length === 0 ? (
@@ -311,7 +350,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
             conversationsList.map(c => (
               <div
                 key={c.id}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs text-[#c4c7c5] hover:text-white hover:bg-[#282a2c] cursor-pointer transition-colors group"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-[#c4c7c5] hover:text-white hover:bg-[#282a2c] cursor-pointer transition-colors group"
                 onClick={() => setIsSidebarOpen(false)}
               >
                 <MessageSquare className="w-3.5 h-3.5 text-[#9aa0a6] group-hover:text-[#a8c7fa] shrink-0" />
@@ -358,9 +397,9 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
       {/* Main Chat Canvas */}
       <div className="flex-1 flex flex-col h-full min-w-0 bg-[#131314] relative">
         
-        {/* Clean Top App Bar (No model selection) */}
-        <header className="flex items-center justify-between px-4 sm:px-6 h-14 bg-[#131314] border-b border-[#282a2c]/60 shrink-0 z-10">
-          <div className="flex items-center gap-3">
+        {/* Top App Bar */}
+        <header className="flex items-center justify-between px-3 sm:px-6 h-14 bg-[#131314] border-b border-[#282a2c]/80 shrink-0 z-10">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => setIsSidebarOpen(true)}
@@ -374,8 +413,8 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
               <span className="font-semibold text-sm sm:text-base tracking-tight text-white font-display">
                 {websiteSettings.brandName}
               </span>
-              <span className="text-[11px] text-[#9aa0a6] bg-[#1e1f20] px-2 py-0.5 rounded-full border border-[#282a2c]">
-                AI Concierge
+              <span className="text-[10px] text-[#a8c7fa] bg-[#1e1f20] px-2 py-0.5 rounded-full border border-[#282a2c]">
+                Lab11 AI Concierge
               </span>
             </div>
           </div>
@@ -395,18 +434,18 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
         {/* Chat Scroll View */}
         <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-7 bg-gemini-ambient flex flex-col">
           {messages.length === 0 ? (
-            <div className="my-auto max-w-2xl mx-auto w-full py-8 text-left animate-fadeIn">
+            <div className="my-auto max-w-2xl mx-auto w-full py-6 text-left animate-fadeIn">
               {/* Welcome Headline */}
               <div className="mb-8">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1e1f20] border border-[#333538] text-[#a8c7fa] text-xs font-medium mb-4">
                   <VertexSparkleIcon className="w-3.5 h-3.5" size={14} />
-                  <span>Vertex Lab Intelligence</span>
+                  <span>Vertex Lab AI Concierge</span>
                 </div>
                 <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight font-display text-white">
                   <span className="gemini-gradient-text">Hello, {firstName}</span>
                 </h1>
-                <p className="text-lg sm:text-2xl font-normal text-[#9aa0a6] mt-2">
-                  What can I help you with today?
+                <p className="text-base sm:text-xl font-normal text-[#9aa0a6] mt-2">
+                  How can I assist you with anime streetwear drops, sizing, Pakistan delivery, or tatami embroidery?
                 </p>
               </div>
 
@@ -449,7 +488,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
                 if (isCustomer) {
                   return (
                     <div key={msg.id || index} className="flex justify-end">
-                      <div className="max-w-[85%] sm:max-w-[75%] bg-[#282a2c] text-[#e3e3e3] px-4 py-3 rounded-3xl rounded-tr-sm border border-[#3c4043] text-sm sm:text-base leading-relaxed shadow-sm">
+                      <div className="max-w-[85%] sm:max-w-[75%] bg-[#282a2c] text-[#f1f3f4] px-4 py-3 rounded-3xl rounded-tr-sm border border-[#3c4043] text-sm sm:text-base leading-relaxed shadow-sm">
                         <div className="whitespace-pre-wrap">{msg.content}</div>
                       </div>
                     </div>
@@ -458,13 +497,20 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
 
                 return (
                   <div key={msg.id || index} className="flex items-start gap-3 sm:gap-4 max-w-full text-left animate-fadeIn">
-                    <div className="w-8 h-8 rounded-2xl bg-[#1e1f20] border border-[#333538] flex items-center justify-center shrink-0 mt-0.5 shadow-md">
+                    <div className="w-8 h-8 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 shadow-md bg-[#1e1f20] border border-[#333538] text-[#a8c7fa]">
                       <VertexSparkleIcon className="w-4 h-4" size={16} />
                     </div>
 
-                    <div className="flex-1 min-w-0 space-y-2.5">
-                      <div className="text-sm sm:text-base text-[#e3e3e3] leading-relaxed whitespace-pre-wrap font-normal">
-                        {msg.content}
+                    <div className="flex-1 min-w-0 space-y-3">
+                      {msg.senderName && (
+                        <div className="text-[11px] font-semibold tracking-wide uppercase text-[#9aa0a6]">
+                          {msg.senderName}
+                        </div>
+                      )}
+
+                      {/* Crisp Formatted Message Content */}
+                      <div className="w-full text-sm sm:text-base text-[#f1f3f4] leading-relaxed whitespace-pre-wrap font-normal">
+                        {renderTextWithMarkdown(msg.content)}
                       </div>
 
                       {/* Embedded Recommended Products */}
@@ -484,7 +530,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
                         </div>
                       )}
 
-                      {/* Response Actions */}
+                      {/* Response Action Bar */}
                       <div className="flex items-center gap-1 pt-1 text-[#9aa0a6]">
                         <button
                           type="button"
@@ -530,7 +576,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
 
                         <button
                           type="button"
-                          onClick={() => handleSendMessage(`Can you explain further?`)}
+                          onClick={() => handleSendMessage(`Can you explain further in detail?`)}
                           className="p-1.5 rounded-lg hover:bg-[#282a2c] hover:text-white transition-colors ml-1"
                           title="Elaborate"
                         >
@@ -542,7 +588,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
                 );
               })}
 
-              {/* Thinking State */}
+              {/* Typing / Thinking Indicator */}
               {isTyping && (
                 <div className="flex items-start gap-3 sm:gap-4 max-w-full text-left animate-fadeIn">
                   <div className="w-8 h-8 rounded-2xl bg-[#1e1f20] border border-[#333538] flex items-center justify-center shrink-0 mt-0.5 shadow-md">
@@ -554,7 +600,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
                       <span className="w-2 h-2 rounded-full bg-[#9B72CB] animate-bounce [animation-delay:0.2s]"></span>
                       <span className="w-2 h-2 rounded-full bg-[#D96570] animate-bounce [animation-delay:0.4s]"></span>
                     </div>
-                    <span>Vertex Assistant is thinking...</span>
+                    <span>Vertex Assistant is crafting reply...</span>
                   </div>
                 </div>
               )}
@@ -573,7 +619,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
               }}
               className="relative flex items-center bg-[#1e1f20] focus-within:bg-[#232527] rounded-3xl border border-[#333538] focus-within:border-[#4285F4]/70 focus-within:ring-2 focus-within:ring-[#4285F4]/20 transition-all p-1.5 sm:p-2 shadow-xl"
             >
-              {/* Plus/Browse stock button */}
+              {/* Browse stock button */}
               <button
                 type="button"
                 onClick={() => handleSendMessage('Show me all available streetwear products in stock')}
@@ -583,14 +629,18 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
                 <Plus className="w-4 h-4" />
               </button>
 
-              {/* Input */}
+              {/* Chat Input */}
               <textarea
                 ref={textareaRef}
                 rows={1}
                 value={inputMessage}
                 onChange={e => setInputMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={isRecording ? 'Listening...' : 'Ask Vertex AI anything...'}
+                placeholder={
+                  isRecording
+                    ? 'Listening to your voice...'
+                    : 'Ask Vertex AI anything (drops, sizing, fabric GSM, shipping)...'
+                }
                 className="flex-1 bg-transparent text-[#e3e3e3] placeholder:text-[#5f6368] px-2 sm:px-3 py-2 text-xs sm:text-sm focus:outline-none resize-none max-h-32"
               />
 
@@ -621,7 +671,7 @@ export const VertexChatApp: React.FC<VertexChatAppProps> = ({
             </form>
 
             <div className="text-center text-[11px] text-[#5f6368] mt-2">
-              Vertex AI provides instant product, shipping & size guidance. 100% Free Damaged Item Replacement.
+              Vertex Lab Studio Lahore • 240–280 GSM Heavyweight Streetwear • 100% Free Damaged Item Replacement.
             </div>
           </div>
         </div>

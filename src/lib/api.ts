@@ -41,6 +41,7 @@ export const api = {
     email?: string;
     message: string;
     conversationId?: string;
+    assistantMode?: 'gemini' | 'jenny' | 'duo';
   }): Promise<{
     conversation: Conversation;
     customerMessage: Message;

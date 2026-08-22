@@ -277,7 +277,6 @@ export const CustomerChat: React.FC<CustomerChatProps> = ({
     } finally {
       setIsLoading(false);
       setIsTyping(false);
-      inputRef.current?.focus();
     }
   };
 

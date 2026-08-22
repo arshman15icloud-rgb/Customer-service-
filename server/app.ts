@@ -33,7 +33,7 @@ export function createExpressApp() {
   // 1. Chat & Conversations
   apiRouter.post('/chat/send', async (req, res) => {
     try {
-      const { customerId, customerName, email, message, conversationId } = req.body;
+      const { customerId, customerName, email, message, conversationId, assistantMode } = req.body;
 
       if (!customerId || !message) {
         return res.status(400).json({ error: 'customerId and message are required' });
@@ -80,9 +80,17 @@ export function createExpressApp() {
 
       // Otherwise, AI responds
       const history = db.getMessages(conv.id);
-      const aiRes = await generateAICustomerCareResponse(conv.id, message, history);
+      const chosenMode = (assistantMode === 'jenny' || assistantMode === 'duo' || assistantMode === 'gemini') ? assistantMode : 'gemini';
+      const aiRes = await generateAICustomerCareResponse(conv.id, message, history, chosenMode);
 
       let aiMsg = null;
+      let senderName = db.getAiSettings().aiName || 'Vertex AI Concierge';
+      if (chosenMode === 'jenny') {
+        senderName = 'Jenny — Lead Stylist';
+      } else if (chosenMode === 'duo') {
+        senderName = 'Gemini & Jenny Collab';
+      }
+
       if (aiRes.replyText) {
         aiMsg = db.addMessage({
           conversationId: conv.id,
@@ -90,7 +98,7 @@ export function createExpressApp() {
           content: aiRes.replyText,
           productIds: aiRes.recommendedProductIds,
           read: true,
-          senderName: db.getAiSettings().aiName,
+          senderName,
         });
       }
 
